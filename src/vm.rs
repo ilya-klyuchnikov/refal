@@ -242,6 +242,7 @@ impl VM<'_> {
     }
 
     fn match_e_var(&mut self) {
+        // TODO: better empty expressions
         let next = &self.border1.next().unwrap();
         let prev = &self.border2.prev().unwrap();
         if ptr::eq(next.as_ref(), self.border2.as_ref()) {
@@ -255,6 +256,7 @@ impl VM<'_> {
     }
 
     fn match_e_var_l_proj(&mut self, n: usize) {
+        // TODO: better empty expressions
         match self.projections.get(n - 1).unwrap() {
             None => {
                 self.projections.push(None);
@@ -284,6 +286,7 @@ impl VM<'_> {
 
     fn match_e_var_r_proj(&mut self, n: usize) {
         match self.projections.get(n - 1).unwrap() {
+            // TODO: better empty expressions
             None => {
                 self.projections.push(None);
                 self.projections.push(Some(self.border2.prev().unwrap()));
@@ -313,6 +316,7 @@ impl VM<'_> {
     fn match_move_borders(&mut self, l: usize, r: usize) {
         self.border1 = {
             match self.projections.get(l).unwrap() {
+                // TODO: better empty expressions
                 Some(b1) => b1.clone(),
                 None => self
                     .projections
@@ -327,6 +331,7 @@ impl VM<'_> {
     }
 
     fn prepare_lengthen(&mut self) {
+        // TODO: better empty expressions
         self.projections.push(None);
         self.projections.push(Some(self.border1.clone()));
         let jump = Jump {
@@ -342,6 +347,7 @@ impl VM<'_> {
     fn lengthen(&mut self) {
         let right = self.projections.pop().unwrap().unwrap();
         let left_opt = self.projections.pop().unwrap();
+        // TODO: better empty expressions
         let left = match left_opt {
             Some(left) => left,
             None => self.border1.next().unwrap(),
@@ -448,7 +454,7 @@ impl VM<'_> {
                     link_nodes(&border, &current_next);
                 }
                 Command::TransplantExpr(n) => {
-                    // non-empty expression
+                    // TODO: better empty expressions
                     if let Some(node1) = &self.projections[*n - 1] {
                         let option = self.projections.get(*n).unwrap().as_ref();
                         let node2 = option.unwrap();
@@ -459,6 +465,7 @@ impl VM<'_> {
                     }
                 }
                 Command::CopyExpr(n) => {
+                    // TODO: better empty expressions
                     if let Some(node1) = &self.projections[n - 1] {
                         let next = &border.next().unwrap();
                         let mut current_node: Rc<Node> = node1.prev().as_ref().unwrap().clone();
