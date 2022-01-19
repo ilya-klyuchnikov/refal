@@ -243,15 +243,15 @@ impl VM<'_> {
 
     fn match_e_var(&mut self) {
         // TODO: better empty expressions
-        let next = &self.border1.next().unwrap();
-        let prev = &self.border2.prev().unwrap();
-        if ptr::eq(next.as_ref(), self.border2.as_ref()) {
+        let start = &self.border1.next().unwrap();
+        let end = &self.border2.prev().unwrap();
+        if ptr::eq(start.as_ref(), self.border2.as_ref()) {
             // empty expr
             self.projections.push(None);
-            self.projections.push(Some(prev.clone()));
+            self.projections.push(Some(end.clone()));
         } else {
-            self.projections.push(Some(next.clone()));
-            self.projections.push(Some(prev.clone()));
+            self.projections.push(Some(start.clone()));
+            self.projections.push(Some(end.clone()));
         }
     }
 
