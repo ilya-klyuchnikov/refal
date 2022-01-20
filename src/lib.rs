@@ -5,4 +5,3 @@ mod lexer;
 mod parser;
 mod runtime;
 pub mod vm;
-pub mod vm1;
