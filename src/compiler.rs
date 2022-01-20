@@ -2,31 +2,31 @@ use crate::data::*;
 use crate::{globalize, parser};
 use std::collections::{HashMap, HashSet};
 
-pub fn compile(input: &str) -> Result<RaslModule> {
+pub fn compile(input: &str) -> Result<ModuleBytecode> {
     let module = parser::parse_input(input)?;
     let global_module = globalize::globalize_module(module);
     Ok(compile_module(&global_module))
 }
 
-pub fn compile_module(m: &RefalModule) -> RaslModule {
-    let mut functions = Vec::<RaslFunction>::new();
+pub fn compile_module(m: &RefalModule) -> ModuleBytecode {
+    let mut functions = Vec::<FunctionBytecode>::new();
     for f in &m.functions {
         functions.push(compile_function(f));
     }
-    RaslModule {
-        name: m.name.clone(),
-        functions,
+    ModuleBytecode {
+        module_name: m.name.clone(),
+        commands: functions,
     }
 }
 
-fn compile_function(f: &Function) -> RaslFunction {
+fn compile_function(f: &Function) -> FunctionBytecode {
     let mut sentence_commands = Vec::<Vec<Command>>::new();
     for sentence in &f.sentences {
         sentence_commands.push(compile_sentence(sentence));
     }
     let commands = flatten(sentence_commands);
-    RaslFunction {
-        name: f.name.clone(),
+    FunctionBytecode {
+        function_name: f.name.clone(),
         commands,
     }
 }
@@ -637,7 +637,7 @@ struct Hole<'a> {
 fn check_compile(fun_input: &str, commands: Vec<Command>) {
     let mut input = String::from("$MODULE T;");
     input.push_str(fun_input);
-    let fun = compile(&input).unwrap().functions.pop();
+    let fun = compile(&input).unwrap().commands.pop();
     assert!(fun.is_some());
     assert_eq!(fun.unwrap().commands, commands)
 }

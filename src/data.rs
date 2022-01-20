@@ -73,20 +73,20 @@ pub enum Command {
     NextStep,
 }
 
-pub struct RaslFunction {
-    pub name: String,
+pub struct FunctionBytecode {
+    pub function_name: String,
     pub commands: Vec<Command>,
 }
 
-pub struct RaslModule {
-    pub name: String,
-    pub functions: Vec<RaslFunction>,
+pub struct ModuleBytecode {
+    pub module_name: String,
+    pub commands: Vec<FunctionBytecode>,
 }
 
-pub fn module_to_defs(module: RaslModule) -> HashMap<String, Vec<Command>> {
+pub fn module_to_defs(module: ModuleBytecode) -> HashMap<String, Vec<Command>> {
     let mut defs = HashMap::<String, Vec<Command>>::new();
-    for function in module.functions {
-        defs.insert(function.name, function.commands);
+    for fun_code in module.commands {
+        defs.insert(fun_code.function_name, fun_code.commands);
     }
     defs
 }
