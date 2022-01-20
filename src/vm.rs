@@ -458,8 +458,8 @@ impl VM<'_> {
                     }
                     link_nodes(&border, next);
                 }
-                Command::Delete(n) => {
-                    let node = &self.projections[*n];
+                Command::CompleteStep => {
+                    let node = &self.projections[2];
                     let garbage = if !ptr::eq(border.as_ref(), node.as_ref()) {
                         let next = &node.next().unwrap();
                         let first_to_delete = border.next().unwrap();

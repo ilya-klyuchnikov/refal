@@ -69,7 +69,7 @@ pub enum Command {
     CopyExpr(usize),
     TransplantObject(usize),
     TransplantExpr(usize),
-    Delete(usize),
+    CompleteStep,
     NextStep,
 }
 

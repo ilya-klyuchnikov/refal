@@ -514,7 +514,7 @@ fn compile_expression(
             }
         }
     }
-    commands.push(Command::Delete(2));
+    commands.push(Command::CompleteStep);
     commands.push(Command::NextStep);
     commands
 }
@@ -649,7 +649,7 @@ fn test01() {
         vec![
             Command::MatchEmpty,
             Command::MoveBorder,
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
         ],
     )
@@ -666,7 +666,7 @@ fn test02() {
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("A")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
         ],
     )
@@ -682,20 +682,20 @@ fn test60() {
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("B")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::SetupTransition(14),
             Command::MatchSymbolL(String::from("B")),
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("C")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::MatchSymbolL(String::from("C")),
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("A")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
         ],
     )
@@ -710,14 +710,14 @@ fn test_palindrome() {
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("T")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::SetupTransition(13),
             Command::MatchSVarL,
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("T")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::SetupTransition(24),
             Command::MatchSVarL,
@@ -728,12 +728,12 @@ fn test_palindrome() {
             Command::InsertSymbol(String::from("T.P")),
             Command::TransplantExpr(6),
             Command::InsertFunBracketR,
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::MatchEVar,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("F")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
         ],
     )
