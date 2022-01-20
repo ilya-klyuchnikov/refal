@@ -341,12 +341,19 @@ impl VM<'_> {
     }
 }
 
+struct Transplant {
+    border: Rc<Node>,
+    start: Rc<Node>,
+    end: Rc<Node>,
+}
+
 impl VM<'_> {
     fn move_border(&mut self) {
         let mut border = self.projections.get(0).unwrap().clone();
         let mut local_dots: Vec<Rc<Node>> = vec![];
         let mut l_brackets: Vec<Rc<Node>> = vec![];
         let mut l_fun_brackets: Vec<Rc<Node>> = vec![];
+        let mut transplants: Vec<Transplant> = vec![];
         loop {
             let cmd = self.commands.get(self.command_index).unwrap();
             match cmd {
@@ -392,14 +399,27 @@ impl VM<'_> {
                     link_nodes(&border, &next);
                     local_dots.push(border.clone());
                 }
-                // TODO - delay correctly via stack
-                // Command::TransplantObject(n) => {
-                //     let node = self.projections.get(*n).unwrap();
-                //     link_nodes(&node.prev().unwrap(), &node.next().unwrap());
-                //     link_nodes(&border, node);
-                //     border = node.clone();
-                // }
-                Command::TransplantObject(n) | Command::CopySymbol(n) => {
+                Command::TransplantObject(n) => {
+                    let transplant = Transplant {
+                        border: border.clone(),
+                        start: self.projections.get(*n).unwrap().clone(),
+                        end: self.projections.get(*n).unwrap().clone(),
+                    };
+                    transplants.push(transplant);
+                }
+                Command::TransplantExpr(n) => {
+                    let start = self.projections.get(*n - 1).unwrap().clone();
+                    let end = self.projections.get(*n).unwrap().clone();
+                    if !ptr::eq(end.next().unwrap().as_ref(), start.as_ref()) {
+                        let transplant = Transplant {
+                            border: border.clone(),
+                            start,
+                            end,
+                        };
+                        transplants.push(transplant);
+                    }
+                }
+                Command::CopySymbol(n) => {
                     let node = self.projections.get(*n).unwrap();
                     let s = node.object.symbol().unwrap().to_string();
                     let symbol = Rc::new(Node::new(Object::Symbol(s)));
@@ -408,17 +428,7 @@ impl VM<'_> {
                     border = symbol;
                     link_nodes(&border, &current_next);
                 }
-                // TODO - delay correctly via stack
-                // Command::TransplantExpr(n) => {
-                //     // non-empty expression
-                //     let node1 = &self.projections[*n - 1];
-                //     let node2 = self.projections.get(*n).unwrap();
-                //     link_nodes(&node1.prev().unwrap(), &node2.next().unwrap());
-                //     link_nodes(node2, &border.next().unwrap());
-                //     link_nodes(&border, node1);
-                //     border = node2.clone();
-                // }
-                Command::CopyExpr(n) | Command::TransplantExpr(n) => {
+                Command::CopyExpr(n) => {
                     let node1 = &self.projections[*n - 1];
                     let node2 = &self.projections[*n];
                     let mut current_node: Rc<Node> = node1.prev().unwrap();
@@ -448,11 +458,11 @@ impl VM<'_> {
                     }
                     link_nodes(&border, next);
                 }
-                // TODO - handle garbage collection when transplants are fixed
                 Command::Delete(n) => {
                     let node = &self.projections[*n];
                     if !ptr::eq(border.as_ref(), node.as_ref()) {
                         let next = &node.next().unwrap();
+                        // TODO - truly delete
                         // let first_to_delete = &border.next().unwrap();
                         // let last_to_delete = &next.prev().unwrap();
                         link_nodes(&border, next);
@@ -463,6 +473,15 @@ impl VM<'_> {
                 Command::NextStep => {
                     while let Some(dot) = local_dots.pop() {
                         self.dots.push(dot)
+                    }
+                    // performs transplantations
+                    while let Some(transplant) = transplants.pop() {
+                        border = transplant.border;
+                        let f0 = transplant.start;
+                        let f1 = transplant.end;
+                        link_nodes(&f0.prev().unwrap(), &f1.next().unwrap());
+                        link_nodes(&f1, &border.next().unwrap());
+                        link_nodes(&border, &f0);
                     }
                     return;
                 }
