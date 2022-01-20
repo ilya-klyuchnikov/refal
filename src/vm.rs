@@ -15,7 +15,7 @@ struct VM<'a> {
     defs: &'a HashMap<String, Vec<Command>>,
     commands: &'a Vec<Command>,
     command_index: usize,
-    projections: Vec<Option<Rc<Node>>>,
+    projections: Vec<Rc<Node>>,
     jumps: Vec<Jump>,
     border1: Rc<Node>,
     border2: Rc<Node>,
@@ -49,11 +49,7 @@ fn init_vm(defs: &HashMap<String, Vec<Command>>, mut dots: Vec<Rc<Node>>) -> VM 
 
     VM {
         command_index: 0,
-        projections: vec![
-            Some(fun_br_l_prev),
-            Some(fun.clone()),
-            Some(fun_br_r.clone()),
-        ],
+        projections: vec![fun_br_l_prev, fun.clone(), fun_br_r.clone()],
         jumps: Vec::new(),
         border1: fun,
         border2: fun_br_r,
@@ -109,9 +105,9 @@ impl VM<'_> {
         let fun_name = fun.object.symbol().unwrap();
         self.commands = self.defs.get(fun_name).unwrap();
 
-        self.projections.push(Some(self.border1.prev().unwrap()));
-        self.projections.push(Some(fun.clone()));
-        self.projections.push(Some(self.border2.clone()));
+        self.projections.push(self.border1.prev().unwrap());
+        self.projections.push(fun.clone());
+        self.projections.push(self.border2.clone());
 
         self.border1 = fun;
         self.command_index = 0;
@@ -129,7 +125,7 @@ impl VM<'_> {
             return;
         }
         match &self.border1.object {
-            Object::Symbol(s) if s == symbol => self.projections.push(Some(self.border1.clone())),
+            Object::Symbol(s) if s == symbol => self.projections.push(self.border1.clone()),
             _ => self.fail(),
         }
     }
@@ -139,7 +135,7 @@ impl VM<'_> {
             return;
         }
         match &self.border2.object {
-            Object::Symbol(s) if s == symbol => self.projections.push(Some(self.border2.clone())),
+            Object::Symbol(s) if s == symbol => self.projections.push(self.border2.clone()),
             _ => self.fail(),
         }
     }
@@ -151,8 +147,8 @@ impl VM<'_> {
         match self.border1.object {
             Object::StrBracketL => {
                 self.border2 = self.border1.twin().unwrap();
-                self.projections.push(Some(self.border1.clone()));
-                self.projections.push(Some(self.border1.twin().unwrap()));
+                self.projections.push(self.border1.clone());
+                self.projections.push(self.border1.twin().unwrap());
             }
             _ => self.fail(),
         }
@@ -164,8 +160,8 @@ impl VM<'_> {
         }
         match self.border2.object {
             Object::StrBracketR => {
-                self.projections.push(Some(self.border2.twin().unwrap()));
-                self.projections.push(Some(self.border2.clone()));
+                self.projections.push(self.border2.twin().unwrap());
+                self.projections.push(self.border2.clone());
                 self.border2 = self.border2.twin().unwrap();
             }
             _ => self.fail(),
@@ -179,7 +175,7 @@ impl VM<'_> {
         if self.border1.object.symbol().is_none() {
             self.fail()
         } else {
-            self.projections.push(Some(self.border1.clone()))
+            self.projections.push(self.border1.clone())
         }
     }
 
@@ -190,7 +186,7 @@ impl VM<'_> {
         if self.border2.object.symbol().is_none() {
             self.fail()
         } else {
-            self.projections.push(Some(self.border2.clone()))
+            self.projections.push(self.border2.clone())
         }
     }
 
@@ -198,11 +194,11 @@ impl VM<'_> {
         if !self.shift_border1() {
             return;
         }
-        let object = &self.projections.get(n).unwrap().as_ref().unwrap().object;
+        let object = &self.projections.get(n).unwrap().object;
         if &self.border1.object != object {
             self.fail()
         } else {
-            self.projections.push(Some(self.border1.clone()))
+            self.projections.push(self.border1.clone())
         }
     }
 
@@ -210,11 +206,11 @@ impl VM<'_> {
         if !self.shift_border2() {
             return;
         }
-        let object = &self.projections.get(n).unwrap().as_ref().unwrap().object;
+        let object = &self.projections.get(n).unwrap().object;
         if &self.border2.object != object {
             self.fail()
         } else {
-            self.projections.push(Some(self.border2.clone()))
+            self.projections.push(self.border2.clone())
         }
     }
 
@@ -222,11 +218,11 @@ impl VM<'_> {
         if !self.shift_border1() {
             return;
         }
-        self.projections.push(Some(self.border1.clone()));
+        self.projections.push(self.border1.clone());
         if self.border1.object == Object::StrBracketL {
             self.border1 = self.border1.twin().unwrap();
         }
-        self.projections.push(Some(self.border1.clone()));
+        self.projections.push(self.border1.clone());
     }
 
     fn match_t_var_r(&mut self) {
@@ -237,98 +233,66 @@ impl VM<'_> {
         if self.border2.object == Object::StrBracketR {
             self.border2 = self.border2.twin().unwrap()
         }
-        self.projections.push(Some(self.border2.clone()));
-        self.projections.push(Some(to_insert));
+        self.projections.push(self.border2.clone());
+        self.projections.push(to_insert);
     }
 
     fn match_e_var(&mut self) {
-        let next = &self.border1.next().unwrap();
-        let prev = &self.border2.prev().unwrap();
-        if ptr::eq(next.as_ref(), self.border2.as_ref()) {
-            // empty expr
-            self.projections.push(None);
-            self.projections.push(Some(prev.clone()));
-        } else {
-            self.projections.push(Some(next.clone()));
-            self.projections.push(Some(prev.clone()));
-        }
+        let start = &self.border1.next().unwrap();
+        let end = &self.border2.prev().unwrap();
+        self.projections.push(start.clone());
+        self.projections.push(end.clone());
     }
 
     fn match_e_var_l_proj(&mut self, n: usize) {
-        match self.projections.get(n - 1).unwrap() {
-            None => {
-                self.projections.push(None);
-                self.projections.push(Some(self.border1.clone()));
+        let node1 = self.projections.get(n - 1).unwrap().clone();
+        let node2 = self.projections.get(n).unwrap().clone();
+        let start = self.border1.next().unwrap();
+        let mut border0 = node1.prev().unwrap();
+        while !ptr::eq(border0.as_ref(), node2.as_ref()) {
+            border0 = border0.next().unwrap();
+            if !self.shift_border1() {
+                return;
             }
-            Some(node1_ref) => {
-                let node1 = node1_ref.clone();
-                let node2 = self.projections.get(n).unwrap().as_ref().unwrap().clone();
-                let to_insert = self.border1.next().unwrap();
-                let mut border0 = node1.prev().unwrap();
-                while !ptr::eq(border0.as_ref(), node2.as_ref()) {
-                    border0 = border0.next().unwrap();
-                    if !self.shift_border1() {
-                        return;
-                    }
-                    if border0.object == self.border1.object {
-                        continue;
-                    }
-                    self.fail();
-                    return;
-                }
-                self.projections.push(Some(to_insert));
-                self.projections.push(Some(self.border1.clone()));
+            if border0.object == self.border1.object {
+                continue;
             }
+            self.fail();
+            return;
         }
+        self.projections.push(start);
+        self.projections.push(self.border1.clone());
     }
 
     fn match_e_var_r_proj(&mut self, n: usize) {
-        match self.projections.get(n - 1).unwrap() {
-            None => {
-                self.projections.push(None);
-                self.projections.push(Some(self.border2.prev().unwrap()));
+        let to_insert = self.border2.prev().unwrap();
+        //let to_insert = self.border1.next().unwrap();
+        let node1 = self.projections.get(n - 1).unwrap().clone();
+        let node2 = self.projections.get(n).unwrap().clone();
+        let mut border0 = node2.next().unwrap();
+        while !ptr::eq(border0.as_ref(), node1.as_ref()) {
+            border0 = border0.prev().unwrap();
+            if !self.shift_border2() {
+                return;
             }
-            Some(node1_ref) => {
-                let to_insert = self.border1.next().unwrap();
-                let node1 = node1_ref.clone();
-                let node2 = self.projections.get(n).unwrap().as_ref().unwrap().clone();
-                let mut border0 = node2.next().unwrap();
-                while !ptr::eq(border0.as_ref(), node1.as_ref()) {
-                    border0 = border0.prev().unwrap();
-                    if !self.shift_border2() {
-                        return;
-                    }
-                    if border0.object == self.border2.object {
-                        continue;
-                    }
-                    self.fail();
-                    return;
-                }
-                self.projections.push(Some(self.border2.clone()));
-                self.projections.push(Some(to_insert));
+            if border0.object == self.border2.object {
+                continue;
             }
+            self.fail();
+            return;
         }
+        self.projections.push(self.border2.clone());
+        self.projections.push(to_insert);
     }
 
     fn match_move_borders(&mut self, l: usize, r: usize) {
-        self.border1 = {
-            match self.projections.get(l).unwrap() {
-                Some(b1) => b1.clone(),
-                None => self
-                    .projections
-                    .get(l + 1)
-                    .unwrap()
-                    .as_ref()
-                    .unwrap()
-                    .clone(),
-            }
-        };
-        self.border2 = self.projections.get(r).unwrap().as_ref().unwrap().clone();
+        self.border1 = self.projections.get(l).unwrap().clone();
+        self.border2 = self.projections.get(r).unwrap().clone();
     }
 
     fn prepare_lengthen(&mut self) {
-        self.projections.push(None);
-        self.projections.push(Some(self.border1.clone()));
+        self.projections.push(self.border1.next().unwrap());
+        self.projections.push(self.border1.clone());
         let jump = Jump {
             border1: self.border1.clone(),
             border2: self.border2.clone(),
@@ -340,12 +304,8 @@ impl VM<'_> {
     }
 
     fn lengthen(&mut self) {
-        let right = self.projections.pop().unwrap().unwrap();
-        let left_opt = self.projections.pop().unwrap();
-        let left = match left_opt {
-            Some(left) => left,
-            None => self.border1.next().unwrap(),
-        };
+        let right = self.projections.pop().unwrap();
+        let left = self.projections.pop().unwrap();
         self.border1 = right;
         if !self.shift_border1() {
             return;
@@ -353,8 +313,8 @@ impl VM<'_> {
         if self.border1.object == Object::StrBracketL {
             self.border1 = self.border1.twin().unwrap();
         }
-        self.projections.push(Some(left));
-        self.projections.push(Some(self.border1.clone()));
+        self.projections.push(left);
+        self.projections.push(self.border1.clone());
         let jump = Jump {
             border1: self.border1.clone(),
             border2: self.border2.clone(),
@@ -381,12 +341,19 @@ impl VM<'_> {
     }
 }
 
+struct Transplant {
+    border: Rc<Node>,
+    start: Rc<Node>,
+    end: Rc<Node>,
+}
+
 impl VM<'_> {
     fn move_border(&mut self) {
-        let mut border = self.projections.get(0).unwrap().as_ref().unwrap().clone();
+        let mut border = self.projections.get(0).unwrap().clone();
         let mut local_dots: Vec<Rc<Node>> = vec![];
         let mut l_brackets: Vec<Rc<Node>> = vec![];
         let mut l_fun_brackets: Vec<Rc<Node>> = vec![];
+        let mut transplants: Vec<Transplant> = vec![];
         loop {
             let cmd = self.commands.get(self.command_index).unwrap();
             match cmd {
@@ -433,13 +400,27 @@ impl VM<'_> {
                     local_dots.push(border.clone());
                 }
                 Command::TransplantObject(n) => {
-                    let node = self.projections.get(*n).unwrap().as_ref().unwrap();
-                    link_nodes(&node.prev().unwrap(), &node.next().unwrap());
-                    link_nodes(&border, node);
-                    border = node.clone();
+                    let transplant = Transplant {
+                        border: border.clone(),
+                        start: self.projections.get(*n).unwrap().clone(),
+                        end: self.projections.get(*n).unwrap().clone(),
+                    };
+                    transplants.push(transplant);
+                }
+                Command::TransplantExpr(n) => {
+                    let start = self.projections.get(*n - 1).unwrap().clone();
+                    let end = self.projections.get(*n).unwrap().clone();
+                    if !ptr::eq(end.next().unwrap().as_ref(), start.as_ref()) {
+                        let transplant = Transplant {
+                            border: border.clone(),
+                            start,
+                            end,
+                        };
+                        transplants.push(transplant);
+                    }
                 }
                 Command::CopySymbol(n) => {
-                    let node = self.projections.get(*n).unwrap().as_ref().unwrap();
+                    let node = self.projections.get(*n).unwrap();
                     let s = node.object.symbol().unwrap().to_string();
                     let symbol = Rc::new(Node::new(Object::Symbol(s)));
                     let current_next = border.next().unwrap();
@@ -447,57 +428,59 @@ impl VM<'_> {
                     border = symbol;
                     link_nodes(&border, &current_next);
                 }
-                Command::TransplantExpr(n) => {
-                    // non-empty expression
-                    if let Some(node1) = &self.projections[*n - 1] {
-                        let option = self.projections.get(*n).unwrap().as_ref();
-                        let node2 = option.unwrap();
-                        link_nodes(&node1.prev().unwrap(), &node2.next().unwrap());
-                        link_nodes(node2, &border.next().unwrap());
-                        link_nodes(&border, node1);
-                        border = node2.clone();
-                    }
-                }
                 Command::CopyExpr(n) => {
-                    if let Some(node1) = &self.projections[n - 1] {
-                        let next = &border.next().unwrap();
-                        let mut current_node: Rc<Node> = node1.prev().as_ref().unwrap().clone();
-                        let node2 = &self.projections[*n].as_ref().unwrap();
-                        while !ptr::eq(current_node.as_ref(), node2.as_ref()) {
-                            current_node = current_node.next().as_ref().unwrap().clone();
-                            match &current_node.object {
-                                Object::StrBracketL => {
-                                    let current_to_insert = Rc::new(Node::new(Object::StrBracketL));
-                                    l_brackets.push(current_to_insert.clone());
-                                    link_nodes(&border, &current_to_insert);
-                                    border = current_to_insert;
-                                }
-                                Object::StrBracketR => {
-                                    let current_to_insert = Rc::new(Node::new(Object::StrBracketR));
-                                    let prev_l_bracket = l_brackets.pop().unwrap();
-                                    pair_nodes(&prev_l_bracket, &current_to_insert);
-                                    link_nodes(&border, &current_to_insert);
-                                    border = current_to_insert;
-                                }
-                                object => {
-                                    let current_to_insert = Rc::new(Node::new(object.clone()));
-                                    link_nodes(&border, &current_to_insert);
-                                    border = current_to_insert;
-                                }
+                    let node1 = &self.projections[*n - 1];
+                    let node2 = &self.projections[*n];
+                    let mut current_node: Rc<Node> = node1.prev().unwrap();
+                    let next = &border.next().unwrap();
+                    while !ptr::eq(current_node.as_ref(), node2.as_ref()) {
+                        current_node = current_node.next().unwrap();
+                        match &current_node.object {
+                            Object::StrBracketL => {
+                                let current_to_insert = Rc::new(Node::new(Object::StrBracketL));
+                                l_brackets.push(current_to_insert.clone());
+                                link_nodes(&border, &current_to_insert);
+                                border = current_to_insert;
+                            }
+                            Object::StrBracketR => {
+                                let current_to_insert = Rc::new(Node::new(Object::StrBracketR));
+                                let prev_l_bracket = l_brackets.pop().unwrap();
+                                pair_nodes(&prev_l_bracket, &current_to_insert);
+                                link_nodes(&border, &current_to_insert);
+                                border = current_to_insert;
+                            }
+                            object => {
+                                let current_to_insert = Rc::new(Node::new(object.clone()));
+                                link_nodes(&border, &current_to_insert);
+                                border = current_to_insert;
                             }
                         }
-                        link_nodes(&border, next);
                     }
+                    link_nodes(&border, next);
                 }
                 Command::Delete(n) => {
-                    let node = self.projections[*n].as_ref().unwrap().clone();
-                    if !ptr::eq(border.as_ref(), node.as_ref()) {
+                    let node = &self.projections[*n];
+                    let garbage = if !ptr::eq(border.as_ref(), node.as_ref()) {
                         let next = &node.next().unwrap();
-                        let first_to_delete = &border.next().unwrap();
-                        let last_to_delete = &next.prev().unwrap();
+                        let first_to_delete = border.next().unwrap();
+                        let last_to_delete = next.prev().unwrap();
                         link_nodes(&border, next);
-                        unlink_next(last_to_delete);
-                        unlink_prev(first_to_delete);
+                        unlink_next(&last_to_delete);
+                        unlink_prev(&first_to_delete);
+                        Some(first_to_delete)
+                    } else {
+                        None
+                    };
+                    while let Some(transplant) = transplants.pop() {
+                        let b = transplant.border;
+                        let start = transplant.start;
+                        let end = transplant.end;
+                        link_nodes(&start.prev().unwrap(), &end.next().unwrap());
+                        link_nodes(&end, &b.next().unwrap());
+                        link_nodes(&b, &start);
+                    }
+                    if let Some(start) = garbage {
+                        free(start);
                     }
                 }
                 Command::NextStep => {
@@ -810,6 +793,16 @@ Repeated {
         = $s.1 $s.2 $s.3;
     $e.1
         = N;
+}
+
+RemoveRepeated2 {
+    $e.1 '|' $e.1 '|' $e.2 = $e.1 $e.1 $e.2;
+    $e.1 = 'no_match';
+}
+
+RemoveRepeated3 {
+    $e.1 '|' $e.1 '|' $e.1 '|' $e.2 = $e.1 $e.1 $e.1 <RemoveRepeated3 $e.2>;
+    $e.1 = $e.1;
 }
 
 /* ----- integration tests ----- */
@@ -1273,6 +1266,26 @@ TestRepeated3
 { = <'Test.Repeated' ('1' 'a') ('2' 'a') ('3' 'b') ('4' 'b') ('c' 'd') ('c' 'd')>; }
 TestRepeated3Expected
 { = 'a' 'b' 'c' ;}
+
+TestRemoveRepeated21
+{ = <RemoveRepeated2 '|' '|' >;}
+TestRemoveRepeated21Expected
+{ = ;}
+
+TestRemoveRepeated31
+{ = <RemoveRepeated3 '|' '|' '|' >;}
+TestRemoveRepeated31Expected
+{ = ;}
+
+TestRemoveRepeated32
+{ = <RemoveRepeated3 'a' '|' 'a' '|' 'a' '|' >;}
+TestRemoveRepeated32Expected
+{ = 'a' 'a' 'a';}
+
+TestRemoveRepeated33
+{ = <RemoveRepeated3 'a' 'a' '|' 'a' 'a' '|' 'a' 'a' '|' 'a' 'a' '|' 'a' 'a' '|' 'a' 'a' >;}
+TestRemoveRepeated33Expected
+{ = 'a' 'a' 'a' 'a' 'a' 'a' 'a' 'a' '|' 'a' 'a' '|' 'a' 'a';}
 "#;
 
 #[cfg(test)]
@@ -1739,4 +1752,36 @@ fn test_term_r2() {
 #[test]
 fn test_term_r3() {
     test_example("Test.TestTermR3", "Test.TestTermR3Expected")
+}
+
+#[test]
+fn test_remove_repeated_21() {
+    test_example(
+        "Test.TestRemoveRepeated21",
+        "Test.TestRemoveRepeated21Expected",
+    )
+}
+
+#[test]
+fn test_remove_repeated_31() {
+    test_example(
+        "Test.TestRemoveRepeated31",
+        "Test.TestRemoveRepeated31Expected",
+    )
+}
+
+#[test]
+fn test_remove_repeated_32() {
+    test_example(
+        "Test.TestRemoveRepeated32",
+        "Test.TestRemoveRepeated32Expected",
+    )
+}
+
+#[test]
+fn test_remove_repeated_33() {
+    test_example(
+        "Test.TestRemoveRepeated33",
+        "Test.TestRemoveRepeated33Expected",
+    )
 }

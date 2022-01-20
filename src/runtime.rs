@@ -86,9 +86,27 @@ pub fn unlink_next(n: &Rc<Node>) {
     *n.next.borrow_mut() = None;
 }
 
+fn unpair(n: &Rc<Node>) {
+    *n.twin.borrow_mut() = None;
+}
+
 pub fn pair_nodes(n1: &Rc<Node>, n2: &Rc<Node>) {
     *n1.twin.borrow_mut() = Some(n2.clone());
     *n2.twin.borrow_mut() = Some(n1.clone());
+}
+
+pub fn free(start: Rc<Node>) {
+    let mut cursor = start;
+    loop {
+        let next = cursor.next();
+        unlink_prev(&cursor);
+        unlink_next(&cursor);
+        unpair(&cursor);
+        match next {
+            None => break,
+            Some(n) => cursor = n,
+        }
+    }
 }
 
 pub fn init_view(main: &str) -> (Vec<Rc<Node>>, Chain) {
