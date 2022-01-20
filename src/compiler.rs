@@ -16,7 +16,7 @@ pub fn compile_module(m: &RefalModule) -> HashMap<String, Vec<Command>> {
     defs
 }
 
-fn compile_function(module: &String, f: &Function) -> Vec<Command> {
+fn compile_function(module: &str, f: &Function) -> Vec<Command> {
     let mut sentence_commands = Vec::<Vec<Command>>::new();
     for sentence in &f.sentences {
         sentence_commands.push(compile_sentence(module, sentence));
@@ -24,7 +24,7 @@ fn compile_function(module: &String, f: &Function) -> Vec<Command> {
     flatten(sentence_commands)
 }
 
-fn compile_sentence(module: &String, sentence: &Sentence) -> Vec<Command> {
+fn compile_sentence(module: &str, sentence: &Sentence) -> Vec<Command> {
     let mut commands = Vec::<Command>::new();
     let pattern: Vec<&RefalObject> = sentence.pattern.iter().collect();
     let expression: Vec<&RefalObject> = sentence.expression.iter().collect();
@@ -488,7 +488,7 @@ fn constrain_lengthen(state: &mut State) {
 }
 
 fn compile_expression(
-    module: &String,
+    module: &str,
     expression: &[&RefalObject],
     projected_vars: &HashMap<String, usize>,
     vars: &mut HashSet<String>,
@@ -528,9 +528,9 @@ fn compile_expression(
     commands
 }
 
-fn qualify(module: &String, fun: &String) -> String {
+fn qualify(module: &str, fun: &str) -> String {
     if fun.contains('.') {
-        fun.clone()
+        fun.to_string()
     } else {
         module.to_owned() + "." + fun
     }
