@@ -9,7 +9,7 @@ pub enum Error {
     IllegalState,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RefalObject {
     Symbol(String),
     StrBracketL,

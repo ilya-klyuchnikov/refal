@@ -45,7 +45,7 @@ fn init_vm(defs: &HashMap<String, Vec<Command>>, mut dots: Vec<Rc<Node>>) -> VM 
     let fun_br_l_prev = fun_br_l.prev();
 
     let fun_sym = fun.object.symbol().unwrap();
-    let commands = defs.get(fun_sym).unwrap();
+    let commands = defs.get(fun_sym).expect(fun_sym);
 
     VM {
         command_index: 0,

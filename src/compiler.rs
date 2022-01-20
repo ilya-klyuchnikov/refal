@@ -1,30 +1,30 @@
 use crate::data::*;
-use crate::{globalize, parser};
+use crate::parser;
 use std::collections::{HashMap, HashSet};
 
 pub fn compile(input: &str) -> Result<HashMap<String, Vec<Command>>> {
     let module = parser::parse_input(input)?;
-    let global_module = globalize::globalize_module(module);
-    Ok(compile_module(&global_module))
+    Ok(compile_module(&module))
 }
 
 pub fn compile_module(m: &RefalModule) -> HashMap<String, Vec<Command>> {
     let mut defs = HashMap::<String, Vec<Command>>::new();
+    let module = &m.name;
     for f in &m.functions {
-        defs.insert(f.name.clone(), compile_function(f));
+        defs.insert(qualify(module, &f.name), compile_function(module, f));
     }
     defs
 }
 
-fn compile_function(f: &Function) -> Vec<Command> {
+fn compile_function(module: &String, f: &Function) -> Vec<Command> {
     let mut sentence_commands = Vec::<Vec<Command>>::new();
     for sentence in &f.sentences {
-        sentence_commands.push(compile_sentence(sentence));
+        sentence_commands.push(compile_sentence(module, sentence));
     }
     flatten(sentence_commands)
 }
 
-fn compile_sentence(sentence: &Sentence) -> Vec<Command> {
+fn compile_sentence(module: &String, sentence: &Sentence) -> Vec<Command> {
     let mut commands = Vec::<Command>::new();
     let pattern: Vec<&RefalObject> = sentence.pattern.iter().collect();
     let expression: Vec<&RefalObject> = sentence.expression.iter().collect();
@@ -32,6 +32,7 @@ fn compile_sentence(sentence: &Sentence) -> Vec<Command> {
     let mut result = compile_pattern(&pattern);
     commands.append(&mut result.commands);
     commands.append(&mut compile_expression(
+        module,
         &expression,
         &result.projected_vars,
         &mut vars,
@@ -479,14 +480,20 @@ fn constrain_lengthen(state: &mut State) {
 }
 
 fn compile_expression(
+    module: &String,
     expression: &[&RefalObject],
     projected_vars: &HashMap<String, usize>,
     vars: &mut HashSet<String>,
 ) -> Vec<Command> {
     let mut commands = vec![Command::RewriteStart];
+    let mut prev_fun_br = false;
     for x in expression {
         match x {
-            RefalObject::Symbol(s) => commands.push(Command::InsertSymbol(s.clone())),
+            RefalObject::Symbol(image) if prev_fun_br => {
+                let sym = qualify(module, image);
+                commands.push(Command::InsertSymbol(sym))
+            }
+            RefalObject::Symbol(image) => commands.push(Command::InsertSymbol(image.clone())),
             RefalObject::StrBracketL => commands.push(Command::InsertStrBracketL),
             RefalObject::StrBracketR => commands.push(Command::InsertStrBracketR),
             RefalObject::FunBracketL => commands.push(Command::InsertFunBracketL),
@@ -506,10 +513,19 @@ fn compile_expression(
                 }
             }
         }
+        prev_fun_br = **x == RefalObject::FunBracketL;
     }
     commands.push(Command::RewriteFinalize);
     commands.push(Command::MatchStart);
     commands
+}
+
+fn qualify(module: &String, fun: &String) -> String {
+    if fun.contains('.') {
+        fun.clone()
+    } else {
+        module.to_owned() + "." + fun
+    }
 }
 
 fn find_hole(state: &State) -> Option<usize> {
@@ -630,10 +646,9 @@ struct Hole<'a> {
 fn check_compile(fun_input: &str, commands: Vec<Command>) {
     let mut input = String::from("$MODULE T;");
     input.push_str(fun_input);
-    let module = parser::parse_input(&input).unwrap();
-    let mut global_module = globalize::globalize_module(module);
-    let in_fun = global_module.functions.pop().unwrap();
-    let compiled = compile_function(&in_fun);
+    let mut module = parser::parse_input(&input).unwrap();
+    let in_fun = module.functions.pop().unwrap();
+    let compiled = compile_function(&String::from("T"), &in_fun);
     assert_eq!(compiled, commands)
 }
 
