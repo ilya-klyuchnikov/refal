@@ -2,33 +2,26 @@ use crate::data::*;
 use crate::{globalize, parser};
 use std::collections::{HashMap, HashSet};
 
-pub fn compile(input: &str) -> Result<ModuleBytecode> {
+pub fn compile(input: &str) -> Result<HashMap<String, Vec<Command>>> {
     let module = parser::parse_input(input)?;
     let global_module = globalize::globalize_module(module);
     Ok(compile_module(&global_module))
 }
 
-pub fn compile_module(m: &RefalModule) -> ModuleBytecode {
-    let mut functions = Vec::<FunctionBytecode>::new();
+pub fn compile_module(m: &RefalModule) -> HashMap<String, Vec<Command>> {
+    let mut defs = HashMap::<String, Vec<Command>>::new();
     for f in &m.functions {
-        functions.push(compile_function(f));
+        defs.insert(f.name.clone(), compile_function(f));
     }
-    ModuleBytecode {
-        module_name: m.name.clone(),
-        commands: functions,
-    }
+    defs
 }
 
-fn compile_function(f: &Function) -> FunctionBytecode {
+fn compile_function(f: &Function) -> Vec<Command> {
     let mut sentence_commands = Vec::<Vec<Command>>::new();
     for sentence in &f.sentences {
         sentence_commands.push(compile_sentence(sentence));
     }
-    let commands = flatten(sentence_commands);
-    FunctionBytecode {
-        function_name: f.name.clone(),
-        commands,
-    }
+    flatten(sentence_commands)
 }
 
 fn compile_sentence(sentence: &Sentence) -> Vec<Command> {
@@ -640,8 +633,8 @@ fn check_compile(fun_input: &str, commands: Vec<Command>) {
     let module = parser::parse_input(&input).unwrap();
     let mut global_module = globalize::globalize_module(module);
     let in_fun = global_module.functions.pop().unwrap();
-    let out_fun = compile_function(&in_fun);
-    assert_eq!(out_fun.commands, commands)
+    let compiled = compile_function(&in_fun);
+    assert_eq!(compiled, commands)
 }
 
 #[test]

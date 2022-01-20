@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::result;
 
 pub type Result<T> = result::Result<T, Error>;
@@ -71,22 +70,4 @@ pub enum Command {
     TransplantExpr(usize),
     CompleteStep,
     NextStep,
-}
-
-pub struct FunctionBytecode {
-    pub function_name: String,
-    pub commands: Vec<Command>,
-}
-
-pub struct ModuleBytecode {
-    pub module_name: String,
-    pub commands: Vec<FunctionBytecode>,
-}
-
-pub fn module_to_defs(module: ModuleBytecode) -> HashMap<String, Vec<Command>> {
-    let mut defs = HashMap::<String, Vec<Command>>::new();
-    for fun_code in module.commands {
-        defs.insert(fun_code.function_name, fun_code.commands);
-    }
-    defs
 }

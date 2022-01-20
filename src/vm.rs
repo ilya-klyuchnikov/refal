@@ -1291,9 +1291,7 @@ TestRemoveRepeated33Expected
 #[cfg(test)]
 fn test_example(goal1: &str, goal2: &str) {
     use crate::compiler::compile;
-    use crate::data;
-    let rasl_module = compile(TEST_PROGRAM).unwrap();
-    let defs = data::module_to_defs(rasl_module);
+    let defs = compile(TEST_PROGRAM).unwrap();
     let out1 = eval_main(&defs, &String::from(goal1));
     let out2 = eval_main(&defs, &String::from(goal2));
     assert_eq!(out1, out2);
