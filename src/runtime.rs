@@ -37,17 +37,21 @@ impl Node {
             twin: RefCell::new(None),
         }
     }
-
-    pub fn next(&self) -> Option<Rc<Node>> {
+    #[inline(always)]
+    pub fn next_opt(&self) -> Option<Rc<Node>> {
         self.next.borrow().as_ref().cloned()
     }
-
-    pub fn prev(&self) -> Option<Rc<Node>> {
-        self.prev.borrow().as_ref().cloned()
+    #[inline(always)]
+    pub fn next(&self) -> Rc<Node> {
+        self.next.borrow().as_ref().unwrap().clone()
     }
-
-    pub fn twin(&self) -> Option<Rc<Node>> {
-        self.twin.borrow().as_ref().cloned()
+    #[inline(always)]
+    pub fn prev(&self) -> Rc<Node> {
+        self.prev.borrow().as_ref().unwrap().clone()
+    }
+    #[inline(always)]
+    pub fn twin(&self) -> Rc<Node> {
+        self.twin.borrow().as_ref().unwrap().clone()
     }
 }
 
@@ -64,7 +68,7 @@ pub fn flatten(chain: &Chain) -> Vec<Object> {
             Object::First | Object::Last => (),
             obj => objects.push(obj.clone()),
         }
-        if let Some(next) = cursor.next() {
+        if let Some(next) = cursor.next_opt() {
             cursor = next;
         } else {
             break;
@@ -98,7 +102,7 @@ pub fn pair_nodes(n1: &Rc<Node>, n2: &Rc<Node>) {
 pub fn free(start: Rc<Node>) {
     let mut cursor = start;
     loop {
-        let next = cursor.next();
+        let next = cursor.next_opt();
         unlink_prev(&cursor);
         unlink_next(&cursor);
         unpair(&cursor);

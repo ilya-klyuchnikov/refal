@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::result;
 
 pub type Result<T> = result::Result<T, Error>;
@@ -69,24 +68,6 @@ pub enum Command {
     CopyExpr(usize),
     TransplantObject(usize),
     TransplantExpr(usize),
-    Delete(usize),
+    CompleteStep,
     NextStep,
-}
-
-pub struct RaslFunction {
-    pub name: String,
-    pub commands: Vec<Command>,
-}
-
-pub struct RaslModule {
-    pub name: String,
-    pub functions: Vec<RaslFunction>,
-}
-
-pub fn module_to_defs(module: RaslModule) -> HashMap<String, Vec<Command>> {
-    let mut defs = HashMap::<String, Vec<Command>>::new();
-    for function in module.functions {
-        defs.insert(function.name, function.commands);
-    }
-    defs
 }

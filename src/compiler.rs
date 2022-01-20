@@ -2,33 +2,26 @@ use crate::data::*;
 use crate::{globalize, parser};
 use std::collections::{HashMap, HashSet};
 
-pub fn compile(input: &str) -> Result<RaslModule> {
+pub fn compile(input: &str) -> Result<HashMap<String, Vec<Command>>> {
     let module = parser::parse_input(input)?;
     let global_module = globalize::globalize_module(module);
     Ok(compile_module(&global_module))
 }
 
-pub fn compile_module(m: &RefalModule) -> RaslModule {
-    let mut functions = Vec::<RaslFunction>::new();
+pub fn compile_module(m: &RefalModule) -> HashMap<String, Vec<Command>> {
+    let mut defs = HashMap::<String, Vec<Command>>::new();
     for f in &m.functions {
-        functions.push(compile_function(f));
+        defs.insert(f.name.clone(), compile_function(f));
     }
-    RaslModule {
-        name: m.name.clone(),
-        functions,
-    }
+    defs
 }
 
-fn compile_function(f: &Function) -> RaslFunction {
+fn compile_function(f: &Function) -> Vec<Command> {
     let mut sentence_commands = Vec::<Vec<Command>>::new();
     for sentence in &f.sentences {
         sentence_commands.push(compile_sentence(sentence));
     }
-    let commands = flatten(sentence_commands);
-    RaslFunction {
-        name: f.name.clone(),
-        commands,
-    }
+    flatten(sentence_commands)
 }
 
 fn compile_sentence(sentence: &Sentence) -> Vec<Command> {
@@ -514,7 +507,7 @@ fn compile_expression(
             }
         }
     }
-    commands.push(Command::Delete(2));
+    commands.push(Command::CompleteStep);
     commands.push(Command::NextStep);
     commands
 }
@@ -637,9 +630,11 @@ struct Hole<'a> {
 fn check_compile(fun_input: &str, commands: Vec<Command>) {
     let mut input = String::from("$MODULE T;");
     input.push_str(fun_input);
-    let fun = compile(&input).unwrap().functions.pop();
-    assert!(fun.is_some());
-    assert_eq!(fun.unwrap().commands, commands)
+    let module = parser::parse_input(&input).unwrap();
+    let mut global_module = globalize::globalize_module(module);
+    let in_fun = global_module.functions.pop().unwrap();
+    let compiled = compile_function(&in_fun);
+    assert_eq!(compiled, commands)
 }
 
 #[test]
@@ -649,7 +644,7 @@ fn test01() {
         vec![
             Command::MatchEmpty,
             Command::MoveBorder,
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
         ],
     )
@@ -666,7 +661,7 @@ fn test02() {
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("A")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
         ],
     )
@@ -682,20 +677,20 @@ fn test60() {
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("B")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::SetupTransition(14),
             Command::MatchSymbolL(String::from("B")),
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("C")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::MatchSymbolL(String::from("C")),
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("A")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
         ],
     )
@@ -710,14 +705,14 @@ fn test_palindrome() {
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("T")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::SetupTransition(13),
             Command::MatchSVarL,
             Command::MatchEmpty,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("T")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::SetupTransition(24),
             Command::MatchSVarL,
@@ -728,12 +723,12 @@ fn test_palindrome() {
             Command::InsertSymbol(String::from("T.P")),
             Command::TransplantExpr(6),
             Command::InsertFunBracketR,
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
             Command::MatchEVar,
             Command::MoveBorder,
             Command::InsertSymbol(String::from("F")),
-            Command::Delete(2),
+            Command::CompleteStep,
             Command::NextStep,
         ],
     )

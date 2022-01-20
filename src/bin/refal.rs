@@ -6,8 +6,7 @@ fn main() -> data::Result<()> {
     let refal_file = &args[1];
     let goal = &args[2];
     let input = fs::read_to_string(refal_file).unwrap();
-    let rasl_module = compiler::compile(&input)?;
-    let defs = data::module_to_defs(rasl_module);
+    let defs = compiler::compile(&input)?;
     let result = vm::eval_main(&defs, goal);
     println!("{:?}", result);
     Ok(())
