@@ -79,7 +79,8 @@ fn execute_cmd(vm: &mut VM, cmd: &Command) {
         Command::MatchEVarLengthen => vm.lengthen(),
         Command::MatchEVarLProj(n) => vm.match_e_var_l_proj(*n),
         Command::MatchEVarRProj(n) => vm.match_e_var_r_proj(*n),
-        Command::MatchMoveBorders(l, r) => vm.match_move_borders(*l, *r),
+        Command::MatchMoveBorderL(n) => vm.match_move_border_l(*n),
+        Command::MatchMoveBorderR(n) => vm.match_move_border_r(*n),
         Command::SetupTransition(n) => vm.setup_transition(*n),
         Command::ConstrainLengthen(n) => vm.constrain_lengthen(*n),
         Command::RewriteStart => vm.rewrite_start(),
@@ -270,9 +271,12 @@ impl VM<'_> {
         self.projections.push(end);
     }
 
-    fn match_move_borders(&mut self, l: usize, r: usize) {
-        self.border1 = self.projections[l].clone();
-        self.border2 = self.projections[r].clone();
+    fn match_move_border_l(&mut self, n: usize) {
+        self.border1 = self.projections[n].clone();
+    }
+
+    fn match_move_border_r(&mut self, n: usize) {
+        self.border2 = self.projections[n].clone();
     }
 
     fn prepare_lengthen(&mut self) {

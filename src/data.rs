@@ -55,7 +55,8 @@ pub enum Command {
     MatchEVarLengthen,
     MatchEVarLProj(usize),
     MatchEVarRProj(usize),
-    MatchMoveBorders(usize, usize),
+    MatchMoveBorderL(usize),
+    MatchMoveBorderR(usize),
     SetupTransition(usize),
     ConstrainLengthen(usize),
 

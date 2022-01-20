@@ -104,10 +104,14 @@ fn compile_pattern(pattern: &[&RefalObject]) -> PatternCompile {
 
 fn move_borders(state: &mut State, index: usize) {
     if let Some(hole) = state.holes.get(index) {
-        if hole.left_border != state.border1 || hole.right_border != state.border2 {
-            let cmd = Command::MatchMoveBorders(hole.left_border, hole.right_border);
+        if hole.left_border != state.border1 {
+            let cmd = Command::MatchMoveBorderL(hole.left_border);
             state.commands.push(cmd);
             state.border1 = hole.left_border;
+        }
+        if hole.right_border != state.border2 {
+            let cmd = Command::MatchMoveBorderR(hole.right_border);
+            state.commands.push(cmd);
             state.border2 = hole.right_border;
         }
     }
@@ -445,11 +449,15 @@ fn handle_holes(state: &mut State) {
     }
     if let Some(hole) = state.holes.first() {
         if let Some(RefalObject::EVar(v)) = hole.objects.first() {
-            if state.border1 != hole.left_border || state.border2 != hole.right_border {
-                state.commands.push(Command::MatchMoveBorders(
-                    hole.left_border,
-                    hole.right_border,
-                ));
+            if state.border1 != hole.left_border {
+                state
+                    .commands
+                    .push(Command::MatchMoveBorderL(hole.left_border));
+            };
+            if state.border2 != hole.right_border {
+                state
+                    .commands
+                    .push(Command::MatchMoveBorderR(hole.right_border));
             };
             state.commands.push(Command::MatchEVarPrepare);
             state.commands.push(Command::MatchEVarLengthen);
@@ -672,7 +680,8 @@ fn test02() {
         vec![
             Command::MatchStrBracketL,
             Command::MatchEmpty,
-            Command::MatchMoveBorders(4, 2),
+            Command::MatchMoveBorderL(4),
+            Command::MatchMoveBorderR(2),
             Command::MatchEmpty,
             Command::RewriteStart,
             Command::InsertSymbol(String::from("A")),
