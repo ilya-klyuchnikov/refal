@@ -255,8 +255,7 @@ impl VM<'_> {
     }
 
     fn match_e_var_r_proj(&mut self, n: usize) {
-        let to_insert = self.border2.prev();
-        //let to_insert = self.border1.next().unwrap();
+        let end = self.border2.prev();
         let node1 = self.projections.get(n - 1).unwrap().clone();
         let node2 = self.projections.get(n).unwrap().clone();
         let mut border0 = node2.next();
@@ -272,7 +271,7 @@ impl VM<'_> {
             return;
         }
         self.projections.push(self.border2.clone());
-        self.projections.push(to_insert);
+        self.projections.push(end);
     }
 
     fn match_move_borders(&mut self, l: usize, r: usize) {
