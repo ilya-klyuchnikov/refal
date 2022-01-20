@@ -37,19 +37,19 @@ impl Node {
             twin: RefCell::new(None),
         }
     }
-
+    #[inline(always)]
     pub fn next_opt(&self) -> Option<Rc<Node>> {
         self.next.borrow().as_ref().cloned()
     }
-
+    #[inline(always)]
     pub fn next(&self) -> Rc<Node> {
         self.next.borrow().as_ref().unwrap().clone()
     }
-
+    #[inline(always)]
     pub fn prev(&self) -> Rc<Node> {
         self.prev.borrow().as_ref().unwrap().clone()
     }
-
+    #[inline(always)]
     pub fn twin(&self) -> Rc<Node> {
         self.twin.borrow().as_ref().unwrap().clone()
     }
