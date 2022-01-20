@@ -255,6 +255,8 @@ impl VM<'_> {
         }
     }
 
+    // non-symmetry here...
+    // we need more tests with empty repeated vars
     fn match_e_var_l_proj(&mut self, n: usize) {
         // TODO: better empty expressions
         match self.projections.get(n - 1).unwrap() {
@@ -279,6 +281,7 @@ impl VM<'_> {
                     return;
                 }
                 self.projections.push(Some(to_insert));
+                // next???
                 self.projections.push(Some(self.border1.clone()));
             }
         }
@@ -292,7 +295,7 @@ impl VM<'_> {
                 self.projections.push(Some(self.border2.prev().unwrap()));
             }
             Some(node1_ref) => {
-                let to_insert = self.border1.next().unwrap();
+                let to_insert = self.border2.prev().unwrap();
                 let node1 = node1_ref.clone();
                 let node2 = self.projections.get(n).unwrap().as_ref().unwrap().clone();
                 let mut border0 = node2.next().unwrap();
@@ -819,6 +822,16 @@ Repeated {
         = N;
 }
 
+RemoveRepeated2 {
+    $e.1 '|' $e.1 '|' $e.2 = $e.1 $e.1 $e.2;
+    $e.1 = 'no_match';
+}
+
+RemoveRepeated3 {
+    $e.1 '|' $e.1 '|' $e.1 '|' $e.2 = $e.1 $e.1 $e.1 <RemoveRepeated3 $e.2>;
+    $e.1 = $e.1;
+}
+
 /* ----- integration tests ----- */
 
 TestPalindrome1
@@ -1280,6 +1293,26 @@ TestRepeated3
 { = <'Test.Repeated' ('1' 'a') ('2' 'a') ('3' 'b') ('4' 'b') ('c' 'd') ('c' 'd')>; }
 TestRepeated3Expected
 { = 'a' 'b' 'c' ;}
+
+TestRemoveRepeated21
+{ = <RemoveRepeated2 '|' '|' >;}
+TestRemoveRepeated21Expected
+{ = ;}
+
+TestRemoveRepeated31
+{ = <RemoveRepeated3 '|' '|' '|' >;}
+TestRemoveRepeated31Expected
+{ = ;}
+
+TestRemoveRepeated32
+{ = <RemoveRepeated3 'a' '|' 'a' '|' 'a' '|' >;}
+TestRemoveRepeated32Expected
+{ = 'a' 'a' 'a';}
+
+TestRemoveRepeated33
+{ = <RemoveRepeated3 'a' 'a' '|' 'a' 'a' '|' 'a' 'a' '|' 'a' 'a' '|' 'a' 'a' '|' 'a' 'a' >;}
+TestRemoveRepeated33Expected
+{ = 'a' 'a' 'a' 'a' 'a' 'a' 'a' 'a' '|' 'a' 'a' '|' 'a' 'a';}
 "#;
 
 #[cfg(test)]
@@ -1746,4 +1779,36 @@ fn test_term_r2() {
 #[test]
 fn test_term_r3() {
     test_example("Test.TestTermR3", "Test.TestTermR3Expected")
+}
+
+#[test]
+fn test_remove_repeated_21() {
+    test_example(
+        "Test.TestRemoveRepeated21",
+        "Test.TestRemoveRepeated21Expected",
+    )
+}
+
+#[test]
+fn test_remove_repeated_31() {
+    test_example(
+        "Test.TestRemoveRepeated31",
+        "Test.TestRemoveRepeated31Expected",
+    )
+}
+
+#[test]
+fn test_remove_repeated_32() {
+    test_example(
+        "Test.TestRemoveRepeated32",
+        "Test.TestRemoveRepeated32Expected",
+    )
+}
+
+#[test]
+fn test_remove_repeated_33() {
+    test_example(
+        "Test.TestRemoveRepeated33",
+        "Test.TestRemoveRepeated33Expected",
+    )
 }
