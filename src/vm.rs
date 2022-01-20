@@ -341,19 +341,13 @@ impl VM<'_> {
     }
 }
 
-struct Transplant {
-    border: Rc<Node>,
-    start: Rc<Node>,
-    end: Rc<Node>,
-}
-
 impl VM<'_> {
     fn move_border(&mut self) {
         let mut border = self.projections.get(0).unwrap().clone();
         let mut local_dots: Vec<Rc<Node>> = vec![];
         let mut l_brackets: Vec<Rc<Node>> = vec![];
         let mut l_fun_brackets: Vec<Rc<Node>> = vec![];
-        let mut transplants: Vec<Transplant> = vec![];
+        let mut transplants: Vec<(Rc<Node>, Rc<Node>, Rc<Node>)> = vec![];
         loop {
             let cmd = self.commands.get(self.command_index).unwrap();
             match cmd {
@@ -400,22 +394,22 @@ impl VM<'_> {
                     local_dots.push(border.clone());
                 }
                 Command::TransplantObject(n) => {
-                    let transplant = Transplant {
-                        border: border.clone(),
-                        start: self.projections.get(*n).unwrap().clone(),
-                        end: self.projections.get(*n).unwrap().clone(),
-                    };
+                    let transplant = (
+                        border.clone(),
+                        self.projections.get(*n).unwrap().clone(),
+                        self.projections.get(*n).unwrap().clone(),
+                    );
                     transplants.push(transplant);
                 }
                 Command::TransplantExpr(n) => {
                     let start = self.projections.get(*n - 1).unwrap().clone();
                     let end = self.projections.get(*n).unwrap().clone();
                     if !ptr::eq(end.next().unwrap().as_ref(), start.as_ref()) {
-                        let transplant = Transplant {
-                            border: border.clone(),
+                        let transplant = (
+                            border.clone(),
                             start,
                             end,
-                        };
+                        );
                         transplants.push(transplant);
                     }
                 }
@@ -472,12 +466,10 @@ impl VM<'_> {
                         None
                     };
                     while let Some(transplant) = transplants.pop() {
-                        let b = transplant.border;
-                        let start = transplant.start;
-                        let end = transplant.end;
+                        let (border, start, end) = transplant;
                         link_nodes(&start.prev().unwrap(), &end.next().unwrap());
-                        link_nodes(&end, &b.next().unwrap());
-                        link_nodes(&b, &start);
+                        link_nodes(&end, &border.next().unwrap());
+                        link_nodes(&border, &start);
                     }
                     if let Some(start) = garbage {
                         free(start);
