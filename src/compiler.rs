@@ -637,9 +637,11 @@ struct Hole<'a> {
 fn check_compile(fun_input: &str, commands: Vec<Command>) {
     let mut input = String::from("$MODULE T;");
     input.push_str(fun_input);
-    let fun = compile(&input).unwrap().commands.pop();
-    assert!(fun.is_some());
-    assert_eq!(fun.unwrap().commands, commands)
+    let module = parser::parse_input(&input).unwrap();
+    let mut global_module = globalize::globalize_module(module);
+    let in_fun = global_module.functions.pop().unwrap();
+    let out_fun = compile_function(&in_fun);
+    assert_eq!(out_fun.commands, commands)
 }
 
 #[test]
