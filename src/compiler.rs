@@ -483,7 +483,7 @@ fn compile_expression(
     projected_vars: &HashMap<String, usize>,
     vars: &mut HashSet<String>,
 ) -> Vec<Command> {
-    let mut commands = vec![Command::MoveBorder];
+    let mut commands = vec![Command::RewriteStart];
     for x in expression {
         match x {
             RefalObject::Symbol(s) => commands.push(Command::InsertSymbol(s.clone())),
@@ -507,8 +507,8 @@ fn compile_expression(
             }
         }
     }
-    commands.push(Command::CompleteStep);
-    commands.push(Command::NextStep);
+    commands.push(Command::RewriteFinalize);
+    commands.push(Command::MatchStart);
     commands
 }
 
@@ -643,9 +643,9 @@ fn test01() {
         "Empty { = ; }",
         vec![
             Command::MatchEmpty,
-            Command::MoveBorder,
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteStart,
+            Command::RewriteFinalize,
+            Command::MatchStart,
         ],
     )
 }
@@ -659,10 +659,10 @@ fn test02() {
             Command::MatchEmpty,
             Command::MatchMoveBorders(4, 2),
             Command::MatchEmpty,
-            Command::MoveBorder,
+            Command::RewriteStart,
             Command::InsertSymbol(String::from("A")),
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteFinalize,
+            Command::MatchStart,
         ],
     )
 }
@@ -675,23 +675,23 @@ fn test60() {
             Command::SetupTransition(7),
             Command::MatchSymbolL(String::from("A")),
             Command::MatchEmpty,
-            Command::MoveBorder,
+            Command::RewriteStart,
             Command::InsertSymbol(String::from("B")),
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteFinalize,
+            Command::MatchStart,
             Command::SetupTransition(14),
             Command::MatchSymbolL(String::from("B")),
             Command::MatchEmpty,
-            Command::MoveBorder,
+            Command::RewriteStart,
             Command::InsertSymbol(String::from("C")),
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteFinalize,
+            Command::MatchStart,
             Command::MatchSymbolL(String::from("C")),
             Command::MatchEmpty,
-            Command::MoveBorder,
+            Command::RewriteStart,
             Command::InsertSymbol(String::from("A")),
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteFinalize,
+            Command::MatchStart,
         ],
     )
 }
@@ -703,33 +703,33 @@ fn test_palindrome() {
         vec![
             Command::SetupTransition(6),
             Command::MatchEmpty,
-            Command::MoveBorder,
+            Command::RewriteStart,
             Command::InsertSymbol(String::from("T")),
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteFinalize,
+            Command::MatchStart,
             Command::SetupTransition(13),
             Command::MatchSVarL,
             Command::MatchEmpty,
-            Command::MoveBorder,
+            Command::RewriteStart,
             Command::InsertSymbol(String::from("T")),
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteFinalize,
+            Command::MatchStart,
             Command::SetupTransition(24),
             Command::MatchSVarL,
             Command::MatchSVarRProj(3),
             Command::MatchEVar,
-            Command::MoveBorder,
+            Command::RewriteStart,
             Command::InsertFunBracketL,
             Command::InsertSymbol(String::from("T.P")),
             Command::TransplantExpr(6),
             Command::InsertFunBracketR,
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteFinalize,
+            Command::MatchStart,
             Command::MatchEVar,
-            Command::MoveBorder,
+            Command::RewriteStart,
             Command::InsertSymbol(String::from("F")),
-            Command::CompleteStep,
-            Command::NextStep,
+            Command::RewriteFinalize,
+            Command::MatchStart,
         ],
     )
 }

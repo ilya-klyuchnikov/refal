@@ -32,9 +32,9 @@ pub fn eval_main(defs: &HashMap<String, Vec<Command>>, main: &str) -> Vec<Object
 fn eval(defs: &HashMap<String, Vec<Command>>, dots: Vec<Rc<Node>>) {
     let mut vm = init_vm(defs, dots);
     while !vm.end {
-        let command = vm.commands[vm.command_index].clone();
+        let cmd = &vm.commands[vm.command_index];
         vm.command_index += 1;
-        execute_cmd(&mut vm, &command);
+        execute_cmd(&mut vm, cmd);
     }
 }
 
@@ -62,6 +62,7 @@ fn init_vm(defs: &HashMap<String, Vec<Command>>, mut dots: Vec<Rc<Node>>) -> VM 
 
 fn execute_cmd(vm: &mut VM, cmd: &Command) {
     match cmd {
+        Command::MatchStart => vm.match_start(),
         Command::MatchEmpty => vm.match_empty(),
         Command::MatchStrBracketL => vm.match_str_bracket_l(),
         Command::MatchStrBracketR => vm.match_str_bracket_r(),
@@ -79,20 +80,15 @@ fn execute_cmd(vm: &mut VM, cmd: &Command) {
         Command::MatchEVarLProj(n) => vm.match_e_var_l_proj(*n),
         Command::MatchEVarRProj(n) => vm.match_e_var_r_proj(*n),
         Command::MatchMoveBorders(l, r) => vm.match_move_borders(*l, *r),
-        Command::MoveBorder => vm.move_border(),
-        Command::NextStep => vm.next_step(),
         Command::SetupTransition(n) => vm.setup_transition(*n),
         Command::ConstrainLengthen(n) => vm.constrain_lengthen(*n),
+        Command::RewriteStart => vm.rewrite_start(),
         _ => panic!("illegal cmd: {:?}", cmd),
     }
 }
 
-// commands
 impl VM<'_> {
-    fn next_step(&mut self) {
-        self.projections = vec![];
-        self.jumps = vec![];
-
+    fn match_start(&mut self) {
         if self.dots.is_empty() {
             self.end = true;
             return;
@@ -186,7 +182,7 @@ impl VM<'_> {
 
     fn match_s_var_l_proj(&mut self, n: usize) {
         if self.shift_border1() {
-            let object = &self.projections.get(n).unwrap().object;
+            let object = &self.projections[n].object;
             if &self.border1.object != object {
                 self.fail()
             } else {
@@ -197,7 +193,7 @@ impl VM<'_> {
 
     fn match_s_var_r_proj(&mut self, n: usize) {
         if self.shift_border2() {
-            let object = &self.projections.get(n).unwrap().object;
+            let object = &self.projections[n].object;
             if &self.border2.object != object {
                 self.fail()
             } else {
@@ -235,8 +231,8 @@ impl VM<'_> {
     }
 
     fn match_e_var_l_proj(&mut self, n: usize) {
-        let border1 = self.projections.get(n - 1).unwrap().clone();
-        let border2 = self.projections.get(n).unwrap().clone();
+        let border1 = self.projections[n - 1].clone();
+        let border2 = self.projections[n].clone();
         let start = self.border1.next();
         let mut cursor = border1.prev();
         while !ptr::eq(cursor.as_ref(), border2.as_ref()) {
@@ -255,8 +251,8 @@ impl VM<'_> {
     }
 
     fn match_e_var_r_proj(&mut self, n: usize) {
-        let border1 = self.projections.get(n - 1).unwrap().clone();
-        let border2 = self.projections.get(n).unwrap().clone();
+        let border1 = self.projections[n - 1].clone();
+        let border2 = self.projections[n].clone();
         let end = self.border2.prev();
         let mut cursor = border2.next();
         while !ptr::eq(cursor.as_ref(), border1.as_ref()) {
@@ -275,8 +271,8 @@ impl VM<'_> {
     }
 
     fn match_move_borders(&mut self, l: usize, r: usize) {
-        self.border1 = self.projections.get(l).unwrap().clone();
-        self.border2 = self.projections.get(r).unwrap().clone();
+        self.border1 = self.projections[l].clone();
+        self.border2 = self.projections[r].clone();
     }
 
     fn prepare_lengthen(&mut self) {
@@ -321,17 +317,17 @@ impl VM<'_> {
             self.jumps.pop();
         }
     }
-}
 
-impl VM<'_> {
-    fn move_border(&mut self) {
-        let mut border = self.projections.get(0).unwrap().clone();
+    fn rewrite_start(&mut self) {
+        self.jumps.clear();
+        let mut border = self.projections[0].clone();
         let mut local_dots: Vec<Rc<Node>> = vec![];
         let mut l_brackets: Vec<Rc<Node>> = vec![];
         let mut l_fun_brackets: Vec<Rc<Node>> = vec![];
         let mut transplants: Vec<(Rc<Node>, Rc<Node>, Rc<Node>)> = vec![];
         loop {
-            let cmd = self.commands.get(self.command_index).unwrap();
+            let cmd = &self.commands[self.command_index];
+            self.command_index += 1;
             match cmd {
                 Command::InsertSymbol(s) => {
                     let symbol = Rc::new(Node::new(Object::Symbol(s.clone())));
@@ -378,19 +374,19 @@ impl VM<'_> {
                 Command::TransplantObject(n) => {
                     transplants.push((
                         border.clone(),
-                        self.projections.get(*n).unwrap().clone(),
-                        self.projections.get(*n).unwrap().clone(),
+                        self.projections[*n].clone(),
+                        self.projections[*n].clone(),
                     ));
                 }
                 Command::TransplantExpr(n) => {
-                    let start = self.projections.get(*n - 1).unwrap().clone();
-                    let end = self.projections.get(*n).unwrap().clone();
+                    let start = self.projections[*n - 1].clone();
+                    let end = self.projections[*n].clone();
                     if !ptr::eq(end.next().as_ref(), start.as_ref()) {
                         transplants.push((border.clone(), start, end));
                     }
                 }
                 Command::CopySymbol(n) => {
-                    let node = self.projections.get(*n).unwrap();
+                    let node = &self.projections[*n];
                     let s = node.object.symbol().unwrap().to_string();
                     let symbol = Rc::new(Node::new(Object::Symbol(s)));
                     let current_next = border.next();
@@ -428,7 +424,7 @@ impl VM<'_> {
                     }
                     link_nodes(&border, next);
                 }
-                Command::CompleteStep => {
+                Command::RewriteFinalize => {
                     let node = &self.projections[2];
                     let garbage = if !ptr::eq(border.as_ref(), node.as_ref()) {
                         let next = &node.next();
@@ -450,22 +446,17 @@ impl VM<'_> {
                     if let Some(start) = garbage {
                         free(start);
                     }
-                }
-                Command::NextStep => {
                     while let Some(dot) = local_dots.pop() {
                         self.dots.push(dot)
                     }
+                    self.projections.clear();
                     return;
                 }
                 _ => panic!("internal error"),
             }
-            self.command_index += 1;
         }
     }
-}
 
-// utilities
-impl VM<'_> {
     fn fail(&mut self) {
         match self.jumps.pop() {
             None => panic!("Recognition impossible"),

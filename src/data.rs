@@ -38,6 +38,7 @@ pub struct RefalModule {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
+    MatchStart,
     MatchEmpty,
     MatchSymbolL(String),
     MatchSymbolR(String),
@@ -58,7 +59,7 @@ pub enum Command {
     SetupTransition(usize),
     ConstrainLengthen(usize),
 
-    MoveBorder,
+    RewriteStart,
     InsertStrBracketL,
     InsertStrBracketR,
     InsertFunBracketL,
@@ -68,6 +69,5 @@ pub enum Command {
     CopyExpr(usize),
     TransplantObject(usize),
     TransplantExpr(usize),
-    CompleteStep,
-    NextStep,
+    RewriteFinalize,
 }
