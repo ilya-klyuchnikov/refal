@@ -121,120 +121,110 @@ impl VM<'_> {
     }
 
     fn symbol_l(&mut self, symbol: &str) {
-        if !self.shift_border1() {
-            return;
-        }
-        match &self.border1.object {
-            Object::Symbol(s) if s == symbol => self.projections.push(self.border1.clone()),
-            _ => self.fail(),
+        if self.shift_border1() {
+            match &self.border1.object {
+                Object::Symbol(s) if s == symbol => self.projections.push(self.border1.clone()),
+                _ => self.fail(),
+            }
         }
     }
 
     fn symbol_r(&mut self, symbol: &str) {
-        if !self.shift_border2() {
-            return;
-        }
-        match &self.border2.object {
-            Object::Symbol(s) if s == symbol => self.projections.push(self.border2.clone()),
-            _ => self.fail(),
+        if self.shift_border2() {
+            match &self.border2.object {
+                Object::Symbol(s) if s == symbol => self.projections.push(self.border2.clone()),
+                _ => self.fail(),
+            }
         }
     }
 
     fn match_str_bracket_l(&mut self) {
-        if !self.shift_border1() {
-            return;
-        }
-        match self.border1.object {
-            Object::StrBracketL => {
-                self.border2 = self.border1.twin().unwrap();
-                self.projections.push(self.border1.clone());
-                self.projections.push(self.border1.twin().unwrap());
+        if self.shift_border1() {
+            match self.border1.object {
+                Object::StrBracketL => {
+                    self.border2 = self.border1.twin().unwrap();
+                    self.projections.push(self.border1.clone());
+                    self.projections.push(self.border1.twin().unwrap());
+                }
+                _ => self.fail(),
             }
-            _ => self.fail(),
         }
     }
 
     fn match_str_bracket_r(&mut self) {
-        if !self.shift_border2() {
-            return;
-        }
-        match self.border2.object {
-            Object::StrBracketR => {
-                self.projections.push(self.border2.twin().unwrap());
-                self.projections.push(self.border2.clone());
-                self.border2 = self.border2.twin().unwrap();
+        if self.shift_border2() {
+            match self.border2.object {
+                Object::StrBracketR => {
+                    self.projections.push(self.border2.twin().unwrap());
+                    self.projections.push(self.border2.clone());
+                    self.border2 = self.border2.twin().unwrap();
+                }
+                _ => self.fail(),
             }
-            _ => self.fail(),
         }
     }
 
     fn match_s_var_l(&mut self) {
-        if !self.shift_border1() {
-            return;
-        }
-        if self.border1.object.symbol().is_none() {
-            self.fail()
-        } else {
-            self.projections.push(self.border1.clone())
+        if self.shift_border1() {
+            if self.border1.object.symbol().is_none() {
+                self.fail()
+            } else {
+                self.projections.push(self.border1.clone())
+            }
         }
     }
 
     fn match_s_var_r(&mut self) {
-        if !self.shift_border2() {
-            return;
-        }
-        if self.border2.object.symbol().is_none() {
-            self.fail()
-        } else {
-            self.projections.push(self.border2.clone())
+        if self.shift_border2() {
+            if self.border2.object.symbol().is_none() {
+                self.fail()
+            } else {
+                self.projections.push(self.border2.clone())
+            }
         }
     }
 
     fn match_s_var_l_proj(&mut self, n: usize) {
-        if !self.shift_border1() {
-            return;
-        }
-        let object = &self.projections.get(n).unwrap().object;
-        if &self.border1.object != object {
-            self.fail()
-        } else {
-            self.projections.push(self.border1.clone())
+        if self.shift_border1() {
+            let object = &self.projections.get(n).unwrap().object;
+            if &self.border1.object != object {
+                self.fail()
+            } else {
+                self.projections.push(self.border1.clone())
+            }
         }
     }
 
     fn match_s_var_r_proj(&mut self, n: usize) {
-        if !self.shift_border2() {
-            return;
-        }
-        let object = &self.projections.get(n).unwrap().object;
-        if &self.border2.object != object {
-            self.fail()
-        } else {
-            self.projections.push(self.border2.clone())
+        if self.shift_border2() {
+            let object = &self.projections.get(n).unwrap().object;
+            if &self.border2.object != object {
+                self.fail()
+            } else {
+                self.projections.push(self.border2.clone())
+            }
         }
     }
 
     fn match_t_var_l(&mut self) {
-        if !self.shift_border1() {
-            return;
+        if self.shift_border1() {
+            self.projections.push(self.border1.clone());
+            if self.border1.object == Object::StrBracketL {
+                self.border1 = self.border1.twin().unwrap();
+            }
+            self.projections.push(self.border1.clone());
         }
-        self.projections.push(self.border1.clone());
-        if self.border1.object == Object::StrBracketL {
-            self.border1 = self.border1.twin().unwrap();
-        }
-        self.projections.push(self.border1.clone());
     }
 
     fn match_t_var_r(&mut self) {
-        if !self.shift_border2() {
-            return;
+        if self.shift_border2() {
+            let to_insert = self.border2.clone();
+            if self.border2.object == Object::StrBracketR {
+                self.border2 = self.border2.twin().unwrap()
+            }
+            self.projections.push(self.border2.clone());
+            self.projections.push(to_insert);
         }
-        let to_insert = self.border2.clone();
-        if self.border2.object == Object::StrBracketR {
-            self.border2 = self.border2.twin().unwrap()
-        }
-        self.projections.push(self.border2.clone());
-        self.projections.push(to_insert);
     }
 
     fn match_e_var(&mut self) {
@@ -293,45 +283,38 @@ impl VM<'_> {
     fn prepare_lengthen(&mut self) {
         self.projections.push(self.border1.next().unwrap());
         self.projections.push(self.border1.clone());
-        let jump = Jump {
+        self.jumps.push(Jump {
             border1: self.border1.clone(),
             border2: self.border2.clone(),
             projection_index: self.projections.len(),
             command_index: self.command_index,
-        };
-        self.jumps.push(jump);
+        });
         self.command_index += 1;
     }
 
     fn lengthen(&mut self) {
-        let right = self.projections.pop().unwrap();
-        let left = self.projections.pop().unwrap();
-        self.border1 = right;
-        if !self.shift_border1() {
-            return;
+        self.border1 = self.projections.pop().unwrap();
+        if self.shift_border1() {
+            if self.border1.object == Object::StrBracketL {
+                self.border1 = self.border1.twin().unwrap();
+            }
+            self.projections.push(self.border1.clone());
+            self.jumps.push(Jump {
+                border1: self.border1.clone(),
+                border2: self.border2.clone(),
+                projection_index: self.projections.len(),
+                command_index: self.command_index - 1,
+            });
         }
-        if self.border1.object == Object::StrBracketL {
-            self.border1 = self.border1.twin().unwrap();
-        }
-        self.projections.push(left);
-        self.projections.push(self.border1.clone());
-        let jump = Jump {
-            border1: self.border1.clone(),
-            border2: self.border2.clone(),
-            projection_index: self.projections.len(),
-            command_index: self.command_index - 1,
-        };
-        self.jumps.push(jump);
     }
 
     fn setup_transition(&mut self, command_index: usize) {
-        let jump = Jump {
+        self.jumps.push(Jump {
             border1: self.border1.clone(),
             border2: self.border2.clone(),
             projection_index: self.projections.len(),
             command_index,
-        };
-        self.jumps.push(jump);
+        });
     }
 
     fn constrain_lengthen(&mut self, n: usize) {
@@ -394,23 +377,17 @@ impl VM<'_> {
                     local_dots.push(border.clone());
                 }
                 Command::TransplantObject(n) => {
-                    let transplant = (
+                    transplants.push((
                         border.clone(),
                         self.projections.get(*n).unwrap().clone(),
                         self.projections.get(*n).unwrap().clone(),
-                    );
-                    transplants.push(transplant);
+                    ));
                 }
                 Command::TransplantExpr(n) => {
                     let start = self.projections.get(*n - 1).unwrap().clone();
                     let end = self.projections.get(*n).unwrap().clone();
                     if !ptr::eq(end.next().unwrap().as_ref(), start.as_ref()) {
-                        let transplant = (
-                            border.clone(),
-                            start,
-                            end,
-                        );
-                        transplants.push(transplant);
+                        transplants.push((border.clone(), start, end));
                     }
                 }
                 Command::CopySymbol(n) => {
