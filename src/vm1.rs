@@ -460,28 +460,32 @@ impl VM<'_> {
                 }
                 Command::Delete(n) => {
                     let node = &self.projections[*n];
-                    if !ptr::eq(border.as_ref(), node.as_ref()) {
+                    let garbage = if !ptr::eq(border.as_ref(), node.as_ref()) {
                         let next = &node.next().unwrap();
-                        // TODO - truly delete
-                        // let first_to_delete = &border.next().unwrap();
-                        // let last_to_delete = &next.prev().unwrap();
+                        let first_to_delete = border.next().unwrap();
+                        let last_to_delete = next.prev().unwrap();
                         link_nodes(&border, next);
-                        // unlink_next(last_to_delete);
-                        // unlink_prev(first_to_delete);
+                        unlink_next(&last_to_delete);
+                        unlink_prev(&first_to_delete);
+                        Some(first_to_delete)
+                    } else {
+                        None
+                    };
+                    while let Some(transplant) = transplants.pop() {
+                        let b = transplant.border;
+                        let start = transplant.start;
+                        let end = transplant.end;
+                        link_nodes(&start.prev().unwrap(), &end.next().unwrap());
+                        link_nodes(&end, &b.next().unwrap());
+                        link_nodes(&b, &start);
+                    }
+                    if let Some(start) = garbage {
+                        free(start);
                     }
                 }
                 Command::NextStep => {
                     while let Some(dot) = local_dots.pop() {
                         self.dots.push(dot)
-                    }
-                    // performs transplantations
-                    while let Some(transplant) = transplants.pop() {
-                        border = transplant.border;
-                        let f0 = transplant.start;
-                        let f1 = transplant.end;
-                        link_nodes(&f0.prev().unwrap(), &f1.next().unwrap());
-                        link_nodes(&f1, &border.next().unwrap());
-                        link_nodes(&border, &f0);
                     }
                     return;
                 }
