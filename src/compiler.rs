@@ -24,22 +24,6 @@ fn compile_function(module: &str, f: &Function) -> Vec<Command> {
     flatten(sentence_commands)
 }
 
-fn compile_sentence(module: &str, sentence: &Sentence) -> Vec<Command> {
-    let mut commands = Vec::<Command>::new();
-    let pattern: Vec<&RefalObject> = sentence.pattern.iter().collect();
-    let expression: Vec<&RefalObject> = sentence.expression.iter().collect();
-    let mut vars = vars(&pattern);
-    let mut result = compile_pattern(&pattern);
-    commands.append(&mut result.commands);
-    commands.append(&mut compile_expression(
-        module,
-        &expression,
-        &result.projected_vars,
-        &mut vars,
-    ));
-    commands
-}
-
 fn flatten(mut sentence_commands: Vec<Vec<Command>>) -> Vec<Command> {
     let mut result = Vec::<Command>::new();
     let mut iter = sentence_commands.iter_mut().peekable();
@@ -53,18 +37,33 @@ fn flatten(mut sentence_commands: Vec<Vec<Command>>) -> Vec<Command> {
     result
 }
 
+
+fn compile_sentence(module: &str, sentence: &Sentence) -> Vec<Command> {
+    let mut commands = Vec::<Command>::new();
+    let pattern: Vec<&RefalObject> = sentence.pattern.iter().collect();
+    let expression: Vec<&RefalObject> = sentence.expression.iter().collect();
+    let mut result = compile_pattern(&pattern);
+    commands.append(&mut result.commands);
+    commands.append(&mut compile_rewrite(
+        module,
+        &expression,
+        &result.projected_vars,
+    ));
+    commands
+}
+
 fn compile_pattern(pattern: &[&RefalObject]) -> PatternCompile {
     let mut state = State {
-        border1: 1,
-        border2: 2,
+        border_l: 1,
+        border_r: 2,
         next_element: 3,
         transition_depth: 0,
         projected_vars: HashMap::new(),
         holes_stack: Vec::new(),
         transition_depth_stack: Vec::new(),
         holes: vec![Hole {
-            left_border: 1,
-            right_border: 2,
+            border_l: 1,
+            border_r: 2,
             objects: pattern.to_vec(),
         }],
         commands: Vec::new(),
@@ -104,15 +103,15 @@ fn compile_pattern(pattern: &[&RefalObject]) -> PatternCompile {
 
 fn match_move_borders(state: &mut State, index: usize) {
     if let Some(hole) = state.holes.get(index) {
-        if hole.left_border != state.border1 {
-            let cmd = Command::MatchMoveBorderL(hole.left_border);
+        if hole.border_l != state.border_l {
+            let cmd = Command::MatchMoveBorderL(hole.border_l);
             state.commands.push(cmd);
-            state.border1 = hole.left_border;
+            state.border_l = hole.border_l;
         }
-        if hole.right_border != state.border2 {
-            let cmd = Command::MatchMoveBorderR(hole.right_border);
+        if hole.border_r != state.border_r {
+            let cmd = Command::MatchMoveBorderR(hole.border_r);
             state.commands.push(cmd);
-            state.border2 = hole.right_border;
+            state.border_r = hole.border_r;
         }
     }
 }
@@ -175,17 +174,17 @@ fn match_str_bracket_l(state: &mut State, index: usize) -> bool {
                     }
                 }
                 let hole1 = Hole {
-                    left_border: state.next_element,
-                    right_border: state.next_element + 1,
+                    border_l: state.next_element,
+                    border_r: state.next_element + 1,
                     objects: hole.objects[1..right_br_index].to_vec(),
                 };
                 let hole2 = Hole {
-                    left_border: state.next_element + 1,
-                    right_border: hole.right_border,
+                    border_l: state.next_element + 1,
+                    border_r: hole.border_r,
                     objects: hole.objects[right_br_index + 1..].to_vec(),
                 };
-                state.border1 = state.next_element;
-                state.border2 = state.next_element + 1;
+                state.border_l = state.next_element;
+                state.border_r = state.next_element + 1;
                 state.holes.remove(index);
                 state.holes.insert(index, hole2);
                 state.holes.insert(index, hole1);
@@ -205,12 +204,12 @@ fn match_s_l(state: &mut State, index: usize) -> bool {
             let first_in_hole = hole.objects[0];
             if let RefalObject::Symbol(s) = first_in_hole {
                 state.commands.push(Command::MatchSymbolL(s.clone()));
-                state.border1 = state.next_element;
-                state.border2 = hole.right_border;
+                state.border_l = state.next_element;
+                state.border_r = hole.border_r;
                 // replace current hole
                 state.holes[index] = Hole {
-                    left_border: state.next_element,
-                    right_border: hole.right_border,
+                    border_l: state.next_element,
+                    border_r: hole.border_r,
                     objects: hole.objects[1..].to_vec(),
                 };
                 state.next_element += 1;
@@ -223,12 +222,12 @@ fn match_s_l(state: &mut State, index: usize) -> bool {
                     }
                     Some(i) => state.commands.push(Command::MatchSVarLProj(*i)),
                 }
-                state.border1 = state.next_element;
-                state.border2 = hole.right_border;
+                state.border_l = state.next_element;
+                state.border_r = hole.border_r;
                 // replace current hole
                 state.holes[index] = Hole {
-                    left_border: state.next_element,
-                    right_border: hole.right_border,
+                    border_l: state.next_element,
+                    border_r: hole.border_r,
                     objects: hole.objects[1..].to_vec(),
                 };
                 state.next_element += 1;
@@ -268,12 +267,12 @@ fn match_e_l(state: &mut State, index: usize) -> bool {
                 false
             };
             if this_match {
-                state.border1 = state.next_element + 1;
-                state.border2 = hole.right_border;
+                state.border_l = state.next_element + 1;
+                state.border_r = hole.border_r;
                 // replace current hole
                 state.holes[index] = Hole {
-                    left_border: state.next_element + 1,
-                    right_border: hole.right_border,
+                    border_l: state.next_element + 1,
+                    border_r: hole.border_r,
                     objects: hole.objects[1..].to_vec(),
                 };
                 state.next_element += 2;
@@ -307,17 +306,17 @@ fn match_str_bracket_r(state: &mut State, index: usize) -> bool {
                     }
                 }
                 let hole1 = Hole {
-                    left_border: hole.left_border,
-                    right_border: state.next_element,
+                    border_l: hole.border_l,
+                    border_r: state.next_element,
                     objects: hole.objects[..l_br_index].to_vec(),
                 };
                 let hole2 = Hole {
-                    left_border: state.next_element,
-                    right_border: state.next_element + 1,
+                    border_l: state.next_element,
+                    border_r: state.next_element + 1,
                     objects: hole.objects[l_br_index + 1..hole.objects.len() - 1].to_vec(),
                 };
-                state.border1 = hole.left_border;
-                state.border2 = state.next_element;
+                state.border_l = hole.border_l;
+                state.border_r = state.next_element;
                 state.holes.remove(index);
                 state.holes.insert(index, hole2);
                 state.holes.insert(index, hole1);
@@ -352,12 +351,12 @@ fn match_s_r(state: &mut State, index: usize) -> bool {
                 false
             };
             if found {
-                state.border1 = hole.left_border;
-                state.border2 = state.next_element;
+                state.border_l = hole.border_l;
+                state.border_r = state.next_element;
                 // replace current hole
                 state.holes[index] = Hole {
-                    left_border: hole.left_border,
-                    right_border: state.next_element,
+                    border_l: hole.border_l,
+                    border_r: state.next_element,
                     objects: hole.objects[0..hole.objects.len() - 1].to_vec(),
                 };
                 state.next_element += 1;
@@ -398,12 +397,12 @@ fn match_e_r(state: &mut State, index: usize) -> bool {
                 false
             };
             if this_match {
-                state.border1 = hole.left_border;
-                state.border2 = state.next_element;
+                state.border_l = hole.border_l;
+                state.border_r = state.next_element;
                 // replace current hole
                 state.holes[index] = Hole {
-                    left_border: hole.left_border,
-                    right_border: state.next_element,
+                    border_l: hole.border_l,
+                    border_r: state.next_element,
                     objects: hole.objects[0..hole.objects.len() - 1].to_vec(),
                 };
                 state.next_element += 2;
@@ -449,15 +448,15 @@ fn handle_holes(state: &mut State) {
     }
     if let Some(hole) = state.holes.first() {
         if let Some(RefalObject::EVar(v)) = hole.objects.first() {
-            if state.border1 != hole.left_border {
+            if state.border_l != hole.border_l {
                 state
                     .commands
-                    .push(Command::MatchMoveBorderL(hole.left_border));
+                    .push(Command::MatchMoveBorderL(hole.border_l));
             };
-            if state.border2 != hole.right_border {
+            if state.border_r != hole.border_r {
                 state
                     .commands
-                    .push(Command::MatchMoveBorderR(hole.right_border));
+                    .push(Command::MatchMoveBorderR(hole.border_r));
             };
             state.commands.push(Command::MatchEVarPrepare);
             state.commands.push(Command::MatchEVarLengthen);
@@ -465,11 +464,11 @@ fn handle_holes(state: &mut State) {
             state
                 .projected_vars
                 .insert(v.clone(), state.next_element + 1);
-            state.border1 = state.next_element + 1;
-            state.border2 = hole.right_border;
+            state.border_l = state.next_element + 1;
+            state.border_r = hole.border_r;
             state.holes[0] = Hole {
-                left_border: state.next_element + 1,
-                right_border: hole.right_border,
+                border_l: state.next_element + 1,
+                border_r: hole.border_r,
                 objects: hole.objects[1..].to_vec(),
             };
             state.next_element += 2;
@@ -487,41 +486,36 @@ fn constrain_lengthen(state: &mut State) {
     }
 }
 
-fn compile_expression(
+fn compile_rewrite(
     module: &str,
     expression: &[&RefalObject],
     projected_vars: &HashMap<String, usize>,
-    vars: &mut HashSet<String>,
 ) -> Vec<Command> {
+    let mut vars: HashSet<_> = projected_vars.keys().collect();
     let mut commands = vec![Command::RewriteStart];
     let mut prev_fun_br = false;
-    for x in expression {
-        match x {
+    for obj in expression {
+        match obj {
             RefalObject::Symbol(image) if prev_fun_br => {
-                let sym = qualify(module, image);
-                commands.push(Command::InsertSymbol(sym))
+                commands.push(Command::InsertSymbol(qualify(module, image)))
             }
             RefalObject::Symbol(image) => commands.push(Command::InsertSymbol(image.clone())),
             RefalObject::StrBracketL => commands.push(Command::InsertStrBracketL),
             RefalObject::StrBracketR => commands.push(Command::InsertStrBracketR),
             RefalObject::FunBracketL => commands.push(Command::InsertFunBracketL),
             RefalObject::FunBracketR => commands.push(Command::InsertFunBracketR),
-            RefalObject::SVar(v) => {
-                if vars.remove(v) {
-                    commands.push(Command::TransplantObject(*projected_vars.get(v).unwrap()))
-                } else {
-                    commands.push(Command::CopySymbol(*projected_vars.get(v).unwrap()))
-                }
+            RefalObject::SVar(v) if vars.remove(v) => {
+                commands.push(Command::TransplantObject(projected_vars[v]))
+            }
+            RefalObject::SVar(v) => commands.push(Command::CopySymbol(projected_vars[v])),
+            RefalObject::EVar(v) | RefalObject::TVar(v) if vars.remove(v) => {
+                commands.push(Command::TransplantExpr(projected_vars[v]))
             }
             RefalObject::EVar(v) | RefalObject::TVar(v) => {
-                if vars.remove(v) {
-                    commands.push(Command::TransplantExpr(*projected_vars.get(v).unwrap()))
-                } else {
-                    commands.push(Command::CopyExpr(*projected_vars.get(v).unwrap()))
-                }
+                commands.push(Command::CopyExpr(projected_vars[v]))
             }
         }
-        prev_fun_br = **x == RefalObject::FunBracketL;
+        prev_fun_br = **obj == RefalObject::FunBracketL;
     }
     commands.push(Command::RewriteFinalize);
     commands.push(Command::MatchStart);
@@ -623,8 +617,8 @@ fn vars(objects: &[&RefalObject]) -> HashSet<String> {
 }
 
 struct State<'a> {
-    border1: usize,
-    border2: usize,
+    border_l: usize,
+    border_r: usize,
     next_element: usize,
     transition_depth: usize,
     projected_vars: HashMap<String, usize>,
@@ -645,8 +639,8 @@ struct Decomposition {
 }
 
 struct Hole<'a> {
-    left_border: usize,
-    right_border: usize,
+    border_l: usize,
+    border_r: usize,
     objects: Vec<&'a RefalObject>,
 }
 
