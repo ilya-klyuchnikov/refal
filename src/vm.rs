@@ -5,8 +5,8 @@ use std::ptr;
 use std::rc::Rc;
 
 struct Jump {
-    border1: Rc<Node>,
-    border2: Rc<Node>,
+    border_l: Rc<Node>,
+    border_r: Rc<Node>,
     projection_index: usize,
     command_index: usize,
 }
@@ -17,8 +17,8 @@ struct VM<'a> {
     command_index: usize,
     projections: Vec<Rc<Node>>,
     jumps: Vec<Jump>,
-    border1: Rc<Node>,
-    border2: Rc<Node>,
+    border_l: Rc<Node>,
+    border_r: Rc<Node>,
     dots: Vec<Rc<Node>>,
     end: bool,
 }
@@ -51,8 +51,8 @@ fn init_vm(defs: &HashMap<String, Vec<Command>>, mut dots: Vec<Rc<Node>>) -> VM 
         command_index: 0,
         projections: vec![fun_br_l_prev, fun.clone(), fun_br_r.clone()],
         jumps: Vec::new(),
-        border1: fun,
-        border2: fun_br_r,
+        border_l: fun,
+        border_r: fun_br_r,
         dots,
         commands,
         end: false,
@@ -66,8 +66,8 @@ fn execute_cmd(vm: &mut VM, cmd: &Command) {
         Command::MatchEmpty => vm.match_empty(),
         Command::MatchStrBracketL => vm.match_str_bracket_l(),
         Command::MatchStrBracketR => vm.match_str_bracket_r(),
-        Command::MatchSymbolL(symbol) => vm.symbol_l(symbol),
-        Command::MatchSymbolR(symbol) => vm.symbol_r(symbol),
+        Command::MatchSymbolL(symbol) => vm.match_symbol_l(symbol),
+        Command::MatchSymbolR(symbol) => vm.match_symbol_r(symbol),
         Command::MatchSVarL => vm.match_s_var_l(),
         Command::MatchSVarR => vm.match_s_var_r(),
         Command::MatchSVarLProj(n) => vm.match_s_var_l_proj(*n),
@@ -95,41 +95,41 @@ impl VM<'_> {
             return;
         }
 
-        self.border2 = self.dots.pop().unwrap();
-        self.border1 = self.border2.twin();
+        self.border_r = self.dots.pop().unwrap();
+        self.border_l = self.border_r.twin();
 
-        let fun = self.border1.next();
+        let fun = self.border_l.next();
         let fun_name = fun.object.symbol().unwrap();
         self.commands = self.defs.get(fun_name).unwrap();
 
-        self.projections.push(self.border1.prev());
+        self.projections.push(self.border_l.prev());
         self.projections.push(fun.clone());
-        self.projections.push(self.border2.clone());
+        self.projections.push(self.border_r.clone());
 
-        self.border1 = fun;
+        self.border_l = fun;
         self.command_index = 0;
     }
 
     fn match_empty(&mut self) {
-        let next = self.border1.next();
-        if !ptr::eq(next.as_ref(), self.border2.as_ref()) {
+        let next = self.border_l.next();
+        if !ptr::eq(next.as_ref(), self.border_r.as_ref()) {
             self.fail();
         }
     }
 
-    fn symbol_l(&mut self, symbol: &str) {
+    fn match_symbol_l(&mut self, symbol: &str) {
         if self.shift_border1() {
-            match &self.border1.object {
-                Object::Symbol(s) if s == symbol => self.projections.push(self.border1.clone()),
+            match &self.border_l.object {
+                Object::Symbol(s) if s == symbol => self.projections.push(self.border_l.clone()),
                 _ => self.fail(),
             }
         }
     }
 
-    fn symbol_r(&mut self, symbol: &str) {
+    fn match_symbol_r(&mut self, symbol: &str) {
         if self.shift_border2() {
-            match &self.border2.object {
-                Object::Symbol(s) if s == symbol => self.projections.push(self.border2.clone()),
+            match &self.border_r.object {
+                Object::Symbol(s) if s == symbol => self.projections.push(self.border_r.clone()),
                 _ => self.fail(),
             }
         }
@@ -137,11 +137,11 @@ impl VM<'_> {
 
     fn match_str_bracket_l(&mut self) {
         if self.shift_border1() {
-            match self.border1.object {
+            match self.border_l.object {
                 Object::StrBracketL => {
-                    self.border2 = self.border1.twin();
-                    self.projections.push(self.border1.clone());
-                    self.projections.push(self.border1.twin());
+                    self.border_r = self.border_l.twin();
+                    self.projections.push(self.border_l.clone());
+                    self.projections.push(self.border_l.twin());
                 }
                 _ => self.fail(),
             }
@@ -150,11 +150,11 @@ impl VM<'_> {
 
     fn match_str_bracket_r(&mut self) {
         if self.shift_border2() {
-            match self.border2.object {
+            match self.border_r.object {
                 Object::StrBracketR => {
-                    self.projections.push(self.border2.twin());
-                    self.projections.push(self.border2.clone());
-                    self.border2 = self.border2.twin();
+                    self.projections.push(self.border_r.twin());
+                    self.projections.push(self.border_r.clone());
+                    self.border_r = self.border_r.twin();
                 }
                 _ => self.fail(),
             }
@@ -163,20 +163,20 @@ impl VM<'_> {
 
     fn match_s_var_l(&mut self) {
         if self.shift_border1() {
-            if self.border1.object.symbol().is_none() {
+            if self.border_l.object.symbol().is_none() {
                 self.fail()
             } else {
-                self.projections.push(self.border1.clone())
+                self.projections.push(self.border_l.clone())
             }
         }
     }
 
     fn match_s_var_r(&mut self) {
         if self.shift_border2() {
-            if self.border2.object.symbol().is_none() {
+            if self.border_r.object.symbol().is_none() {
                 self.fail()
             } else {
-                self.projections.push(self.border2.clone())
+                self.projections.push(self.border_r.clone())
             }
         }
     }
@@ -184,10 +184,10 @@ impl VM<'_> {
     fn match_s_var_l_proj(&mut self, n: usize) {
         if self.shift_border1() {
             let object = &self.projections[n].object;
-            if &self.border1.object != object {
+            if &self.border_l.object != object {
                 self.fail()
             } else {
-                self.projections.push(self.border1.clone())
+                self.projections.push(self.border_l.clone())
             }
         }
     }
@@ -195,38 +195,38 @@ impl VM<'_> {
     fn match_s_var_r_proj(&mut self, n: usize) {
         if self.shift_border2() {
             let object = &self.projections[n].object;
-            if &self.border2.object != object {
+            if &self.border_r.object != object {
                 self.fail()
             } else {
-                self.projections.push(self.border2.clone())
+                self.projections.push(self.border_r.clone())
             }
         }
     }
 
     fn match_t_var_l(&mut self) {
         if self.shift_border1() {
-            self.projections.push(self.border1.clone());
-            if self.border1.object == Object::StrBracketL {
-                self.border1 = self.border1.twin();
+            self.projections.push(self.border_l.clone());
+            if self.border_l.object == Object::StrBracketL {
+                self.border_l = self.border_l.twin();
             }
-            self.projections.push(self.border1.clone());
+            self.projections.push(self.border_l.clone());
         }
     }
 
     fn match_t_var_r(&mut self) {
         if self.shift_border2() {
-            let to_insert = self.border2.clone();
-            if self.border2.object == Object::StrBracketR {
-                self.border2 = self.border2.twin()
+            let to_insert = self.border_r.clone();
+            if self.border_r.object == Object::StrBracketR {
+                self.border_r = self.border_r.twin()
             }
-            self.projections.push(self.border2.clone());
+            self.projections.push(self.border_r.clone());
             self.projections.push(to_insert);
         }
     }
 
     fn match_e_var(&mut self) {
-        let start = &self.border1.next();
-        let end = &self.border2.prev();
+        let start = &self.border_l.next();
+        let end = &self.border_r.prev();
         self.projections.push(start.clone());
         self.projections.push(end.clone());
     }
@@ -234,57 +234,57 @@ impl VM<'_> {
     fn match_e_var_l_proj(&mut self, n: usize) {
         let border1 = self.projections[n - 1].clone();
         let border2 = self.projections[n].clone();
-        let start = self.border1.next();
+        let start = self.border_l.next();
         let mut cursor = border1.prev();
         while !ptr::eq(cursor.as_ref(), border2.as_ref()) {
             cursor = cursor.next();
             if !self.shift_border1() {
                 return;
             }
-            if cursor.object == self.border1.object {
+            if cursor.object == self.border_l.object {
                 continue;
             }
             self.fail();
             return;
         }
         self.projections.push(start);
-        self.projections.push(self.border1.clone());
+        self.projections.push(self.border_l.clone());
     }
 
     fn match_e_var_r_proj(&mut self, n: usize) {
         let border1 = self.projections[n - 1].clone();
         let border2 = self.projections[n].clone();
-        let end = self.border2.prev();
+        let end = self.border_r.prev();
         let mut cursor = border2.next();
         while !ptr::eq(cursor.as_ref(), border1.as_ref()) {
             cursor = cursor.prev();
             if !self.shift_border2() {
                 return;
             }
-            if cursor.object == self.border2.object {
+            if cursor.object == self.border_r.object {
                 continue;
             }
             self.fail();
             return;
         }
-        self.projections.push(self.border2.clone());
+        self.projections.push(self.border_r.clone());
         self.projections.push(end);
     }
 
     fn match_move_border_l(&mut self, n: usize) {
-        self.border1 = self.projections[n].clone();
+        self.border_l = self.projections[n].clone();
     }
 
     fn match_move_border_r(&mut self, n: usize) {
-        self.border2 = self.projections[n].clone();
+        self.border_r = self.projections[n].clone();
     }
 
     fn prepare_lengthen(&mut self) {
-        self.projections.push(self.border1.next());
-        self.projections.push(self.border1.clone());
+        self.projections.push(self.border_l.next());
+        self.projections.push(self.border_l.clone());
         self.jumps.push(Jump {
-            border1: self.border1.clone(),
-            border2: self.border2.clone(),
+            border_l: self.border_l.clone(),
+            border_r: self.border_r.clone(),
             projection_index: self.projections.len(),
             command_index: self.command_index,
         });
@@ -292,15 +292,15 @@ impl VM<'_> {
     }
 
     fn lengthen(&mut self) {
-        self.border1 = self.projections.pop().unwrap();
+        self.border_l = self.projections.pop().unwrap();
         if self.shift_border1() {
-            if self.border1.object == Object::StrBracketL {
-                self.border1 = self.border1.twin();
+            if self.border_l.object == Object::StrBracketL {
+                self.border_l = self.border_l.twin();
             }
-            self.projections.push(self.border1.clone());
+            self.projections.push(self.border_l.clone());
             self.jumps.push(Jump {
-                border1: self.border1.clone(),
-                border2: self.border2.clone(),
+                border_l: self.border_l.clone(),
+                border_r: self.border_r.clone(),
                 projection_index: self.projections.len(),
                 command_index: self.command_index - 1,
             });
@@ -309,8 +309,8 @@ impl VM<'_> {
 
     fn setup_transition(&mut self, command_index: usize) {
         self.jumps.push(Jump {
-            border1: self.border1.clone(),
-            border2: self.border2.clone(),
+            border_l: self.border_l.clone(),
+            border_r: self.border_r.clone(),
             projection_index: self.projections.len(),
             command_index,
         });
@@ -465,8 +465,8 @@ impl VM<'_> {
         match self.jumps.pop() {
             None => panic!("Recognition impossible"),
             Some(jump) => {
-                self.border1 = jump.border1;
-                self.border2 = jump.border2;
+                self.border_l = jump.border_l;
+                self.border_r = jump.border_r;
                 self.projections.truncate(jump.projection_index);
                 self.command_index = jump.command_index;
             }
@@ -474,8 +474,8 @@ impl VM<'_> {
     }
 
     fn shift_border1(&mut self) -> bool {
-        self.border1 = self.border1.next();
-        if ptr::eq(self.border1.as_ref(), self.border2.as_ref()) {
+        self.border_l = self.border_l.next();
+        if ptr::eq(self.border_l.as_ref(), self.border_r.as_ref()) {
             self.fail();
             false
         } else {
@@ -484,8 +484,8 @@ impl VM<'_> {
     }
 
     fn shift_border2(&mut self) -> bool {
-        self.border2 = self.border2.prev();
-        if ptr::eq(self.border1.as_ref(), self.border2.as_ref()) {
+        self.border_r = self.border_r.prev();
+        if ptr::eq(self.border_l.as_ref(), self.border_r.as_ref()) {
             self.fail();
             false
         } else {

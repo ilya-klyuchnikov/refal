@@ -74,15 +74,15 @@ fn compile_pattern(pattern: &[&RefalObject]) -> PatternCompile {
         let s = &mut state;
         match find_hole(s) {
             Some(index) => {
-                move_borders(s, index);
-                let _ = empty(s, index)
-                    || closed_expression(s, index)
-                    || brackets_left(s, index)
-                    || symbol_left(s, index)
-                    || term_left(s, index)
-                    || brackets_right(s, index)
-                    || symbol_right(s, index)
-                    || term_right(s, index);
+                match_move_borders(s, index);
+                let _ = match_empty(s, index)
+                    || match_e_var(s, index)
+                    || match_str_bracket_l(s, index)
+                    || match_s_l(s, index)
+                    || match_e_l(s, index)
+                    || match_str_bracket_r(s, index)
+                    || match_s_r(s, index)
+                    || match_e_r(s, index);
             }
             None => {
                 if !s.holes.is_empty() {
@@ -102,7 +102,7 @@ fn compile_pattern(pattern: &[&RefalObject]) -> PatternCompile {
     }
 }
 
-fn move_borders(state: &mut State, index: usize) {
+fn match_move_borders(state: &mut State, index: usize) {
     if let Some(hole) = state.holes.get(index) {
         if hole.left_border != state.border1 {
             let cmd = Command::MatchMoveBorderL(hole.left_border);
@@ -117,7 +117,7 @@ fn move_borders(state: &mut State, index: usize) {
     }
 }
 
-fn empty(state: &mut State, index: usize) -> bool {
+fn match_empty(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) if hole.objects.is_empty() => {
             state.commands.push(Command::MatchEmpty);
@@ -128,7 +128,7 @@ fn empty(state: &mut State, index: usize) -> bool {
     }
 }
 
-fn closed_expression(state: &mut State, index: usize) -> bool {
+fn match_e_var(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) if hole.objects.len() == 1 => {
             let first_in_hole = hole.objects[0];
@@ -152,7 +152,7 @@ fn closed_expression(state: &mut State, index: usize) -> bool {
     }
 }
 
-fn brackets_left(state: &mut State, index: usize) -> bool {
+fn match_str_bracket_l(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let first_in_hole = hole.objects[0];
@@ -199,7 +199,7 @@ fn brackets_left(state: &mut State, index: usize) -> bool {
     }
 }
 
-fn symbol_left(state: &mut State, index: usize) -> bool {
+fn match_s_l(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let first_in_hole = hole.objects[0];
@@ -241,7 +241,7 @@ fn symbol_left(state: &mut State, index: usize) -> bool {
     }
 }
 
-fn term_left(state: &mut State, index: usize) -> bool {
+fn match_e_l(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let first_in_hole = hole.objects[0];
@@ -284,7 +284,7 @@ fn term_left(state: &mut State, index: usize) -> bool {
     }
 }
 
-fn brackets_right(state: &mut State, index: usize) -> bool {
+fn match_str_bracket_r(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let last_obj_index = hole.objects.len() - 1;
@@ -331,7 +331,7 @@ fn brackets_right(state: &mut State, index: usize) -> bool {
     }
 }
 
-fn symbol_right(state: &mut State, index: usize) -> bool {
+fn match_s_r(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let last_obj_index = hole.objects.len() - 1;
@@ -368,7 +368,7 @@ fn symbol_right(state: &mut State, index: usize) -> bool {
     }
 }
 
-fn term_right(state: &mut State, index: usize) -> bool {
+fn match_e_r(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let last_obj_index = hole.objects.len() - 1;
