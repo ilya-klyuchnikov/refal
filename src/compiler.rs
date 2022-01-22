@@ -37,11 +37,10 @@ fn flatten(mut sentence_commands: Vec<Vec<Command>>) -> Vec<Command> {
     result
 }
 
-
 fn compile_sentence(module: &str, sentence: &Sentence) -> Vec<Command> {
     let mut commands = Vec::<Command>::new();
     let pattern: Vec<&RefalObject> = sentence.pattern.iter().collect();
-    let expression: Vec<&RefalObject> = sentence.expression.iter().collect();
+    let expression: Vec<&RefalObject> = sentence.rewrite.iter().collect();
     let mut result = compile_pattern(&pattern);
     commands.append(&mut result.commands);
     commands.append(&mut compile_rewrite(

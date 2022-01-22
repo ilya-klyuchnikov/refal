@@ -4,7 +4,6 @@ pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
-    Lexing,
     Parsing,
     IllegalState,
 }
@@ -21,16 +20,19 @@ pub enum RefalObject {
     TVar(String),
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Sentence {
     pub pattern: Vec<RefalObject>,
-    pub expression: Vec<RefalObject>,
+    pub rewrite: Vec<RefalObject>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Function {
     pub name: String,
     pub sentences: Vec<Sentence>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct RefalModule {
     pub name: String,
     pub functions: Vec<Function>,
