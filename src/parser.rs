@@ -15,11 +15,9 @@ pub fn parse_input(text: &str) -> Result<RefalModule> {
 
 fn translate_module(cursor: &mut TreeCursor, text: &str) -> RefalModule {
     let root_node = cursor.node();
-    let module_node = root_node.child_by_field_name("module").unwrap();
+    let module_node = root_node.child_by_field_id(MODULE).unwrap();
     let name = get_name(&module_node, text);
-    let function_nodes: Vec<_> = root_node
-        .children_by_field_name("function", cursor)
-        .collect();
+    let function_nodes: Vec<_> = root_node.children_by_field_id(FUNCTION, cursor).collect();
     let functions: Vec<_> = function_nodes
         .iter()
         .map(|n| translate_function(n, cursor, text))
@@ -29,7 +27,7 @@ fn translate_module(cursor: &mut TreeCursor, text: &str) -> RefalModule {
 
 fn translate_function<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &str) -> Function {
     let name = get_name(node, text);
-    let sentence_nodes: Vec<_> = node.children_by_field_name("sentence", cursor).collect();
+    let sentence_nodes: Vec<_> = node.children_by_field_id(SENTENCE, cursor).collect();
     let sentences: Vec<_> = sentence_nodes
         .iter()
         .map(|n| translate_sentence(n, cursor, text))
@@ -39,33 +37,33 @@ fn translate_function<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &s
 
 fn translate_sentence<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &str) -> Sentence {
     let pattern: Vec<_> = node
-        .children_by_field_name("pattern", cursor)
+        .children_by_field_id(PATTERN, cursor)
         .map(|n| translate_object(n, text))
         .collect();
     let rewrite: Vec<_> = node
-        .children_by_field_name("rewrite", cursor)
+        .children_by_field_id(REWRITE, cursor)
         .map(|n| translate_object(n, text))
         .collect();
     Sentence { pattern, rewrite }
 }
 
 fn translate_object(node: tree_sitter::Node, text: &str) -> RefalObject {
-    match node.kind() {
-        "e_var" => EVar(get_string(&node, text)),
-        "s_var" => SVar(get_string(&node, text)),
-        "t_var" => TVar(get_string(&node, text)),
-        "id" => Symbol(get_string(&node, text)),
-        "q_symbol" => Symbol(get_string_stripped(&node, text)),
-        "str_br_l" => StrBracketL,
-        "str_br_r" => StrBracketR,
-        "fun_br_l" => FunBracketL,
-        "fun_br_r" => FunBracketR,
+    match node.kind_id() {
+        E_VAR => EVar(get_string(&node, text)),
+        S_VAR => SVar(get_string(&node, text)),
+        T_VAR => TVar(get_string(&node, text)),
+        ID => Symbol(get_string(&node, text)),
+        Q_SYMBOL => Symbol(get_string_stripped(&node, text)),
+        STR_BR_L => StrBracketL,
+        STR_BR_R => StrBracketR,
+        FUN_BR_L => FunBracketL,
+        FUN_BR_R => FunBracketR,
         _ => panic!(),
     }
 }
 
 fn get_name(node: &tree_sitter::Node, text: &str) -> String {
-    let name_node = node.child_by_field_name("name").unwrap();
+    let name_node = node.child_by_field_id(NAME).unwrap();
     text[name_node.byte_range()].to_string()
 }
 
@@ -78,4 +76,41 @@ fn get_string_stripped(node: &tree_sitter::Node, text: &str) -> String {
     range.start += 1;
     range.end -= 1;
     text[range].to_string()
+}
+
+const MODULE: u16 = 2;
+const FUNCTION: u16 = 1;
+const SENTENCE: u16 = 6;
+const PATTERN: u16 = 4;
+const REWRITE: u16 = 5;
+const E_VAR: u16 = 11;
+const S_VAR: u16 = 12;
+const T_VAR: u16 = 13;
+const ID: u16 = 14;
+const Q_SYMBOL: u16 = 10;
+const STR_BR_L: u16 = 6;
+const STR_BR_R: u16 = 7;
+const FUN_BR_L: u16 = 8;
+const FUN_BR_R: u16 = 9;
+const NAME: u16 = 3;
+
+#[test]
+fn test_mapping() {
+    let language = tree_sitter_refal::language();
+    assert_eq!(E_VAR, language.id_for_node_kind("e_var", true));
+    assert_eq!(S_VAR, language.id_for_node_kind("s_var", true));
+    assert_eq!(T_VAR, language.id_for_node_kind("t_var", true));
+    assert_eq!(ID, language.id_for_node_kind("id", true));
+    assert_eq!(Q_SYMBOL, language.id_for_node_kind("q_symbol", true));
+    assert_eq!(STR_BR_L, language.id_for_node_kind("str_br_l", true));
+    assert_eq!(STR_BR_R, language.id_for_node_kind("str_br_r", true));
+    assert_eq!(FUN_BR_L, language.id_for_node_kind("fun_br_l", true));
+    assert_eq!(FUN_BR_R, language.id_for_node_kind("fun_br_r", true));
+
+    assert_eq!(MODULE, language.field_id_for_name("module").unwrap());
+    assert_eq!(FUNCTION, language.field_id_for_name("function").unwrap());
+    assert_eq!(SENTENCE, language.field_id_for_name("sentence").unwrap());
+    assert_eq!(PATTERN, language.field_id_for_name("pattern").unwrap());
+    assert_eq!(REWRITE, language.field_id_for_name("rewrite").unwrap());
+    assert_eq!(NAME, language.field_id_for_name("name").unwrap());
 }
