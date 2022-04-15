@@ -23,7 +23,14 @@ pub enum Object {
 #[derive(Debug, PartialEq)]
 pub struct Sentence {
     pub pattern: Vec<Object>,
+    pub conditions: Vec<Condition>,
     pub rewrite: Vec<Object>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Condition {
+    pub test: Vec<Object>,
+    pub pattern: Vec<Object>,
 }
 
 #[derive(Debug, PartialEq)]

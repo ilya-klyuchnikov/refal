@@ -1,5 +1,5 @@
 use crate::data::Object::*;
-use crate::data::{Error, Function, Object, RefalModule, Result, Sentence};
+use crate::data::{Condition, Error, Function, Object, RefalModule, Result, Sentence};
 use tree_sitter::{Node, TreeCursor};
 
 pub fn parse_input(text: &str) -> Result<RefalModule> {
@@ -40,11 +40,32 @@ fn translate_sentence<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &s
         .children_by_field_id(PATTERN, cursor)
         .map(|n| translate_object(n, text))
         .collect();
+    let condition_nodes: Vec<_> = node.children_by_field_id(CONDITIONS, cursor).collect();
+    let conditions: Vec<_> = condition_nodes
+        .iter()
+        .map(|n| translate_condition(n, cursor, text))
+        .collect();
     let rewrite: Vec<_> = node
         .children_by_field_id(REWRITE, cursor)
         .map(|n| translate_object(n, text))
         .collect();
-    Sentence { pattern, rewrite }
+    Sentence {
+        pattern,
+        conditions,
+        rewrite,
+    }
+}
+
+fn translate_condition<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &str) -> Condition {
+    let test: Vec<_> = node
+        .children_by_field_id(TEST, cursor)
+        .map(|n| translate_object(n, text))
+        .collect();
+    let pattern: Vec<_> = node
+        .children_by_field_id(PATTERN, cursor)
+        .map(|n| translate_object(n, text))
+        .collect();
+    Condition { test, pattern }
 }
 
 fn translate_object(node: tree_sitter::Node, text: &str) -> Object {
@@ -116,6 +137,9 @@ fn test_mapping() {
     assert_eq!(REWRITE, language.field_id_for_name("rewrite").unwrap());
     assert_eq!(NAME, language.field_id_for_name("name").unwrap());
 
-    assert_eq!(CONDITIONS, language.field_id_for_name("conditions").unwrap());
+    assert_eq!(
+        CONDITIONS,
+        language.field_id_for_name("conditions").unwrap()
+    );
     assert_eq!(TEST, language.field_id_for_name("test").unwrap());
 }
