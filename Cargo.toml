@@ -5,4 +5,4 @@ edition = "2018"
 
 [dependencies]
 tree-sitter = "~0.20"
-"tree-sitter-refal" = { git = "https://github.com/ilya-klyuchnikov/tree-sitter-refal", tag = "0.0.1" }
+"tree-sitter-refal" = { git = "https://github.com/ilya-klyuchnikov/tree-sitter-refal", tag = "0.0.2" }

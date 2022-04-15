@@ -78,21 +78,21 @@ fn get_string_stripped(node: &tree_sitter::Node, text: &str) -> String {
     text[range].to_string()
 }
 
-const MODULE: u16 = 2;
-const FUNCTION: u16 = 1;
-const SENTENCE: u16 = 6;
-const PATTERN: u16 = 4;
-const REWRITE: u16 = 5;
-const E_VAR: u16 = 11;
-const S_VAR: u16 = 12;
-const T_VAR: u16 = 13;
-const ID: u16 = 14;
-const Q_SYMBOL: u16 = 10;
-const STR_BR_L: u16 = 6;
-const STR_BR_R: u16 = 7;
-const FUN_BR_L: u16 = 8;
-const FUN_BR_R: u16 = 9;
-const NAME: u16 = 3;
+const MODULE: u16 = 3;
+const FUNCTION: u16 = 2;
+const SENTENCE: u16 = 7;
+const PATTERN: u16 = 5;
+const REWRITE: u16 = 6;
+const E_VAR: u16 = 13;
+const S_VAR: u16 = 14;
+const T_VAR: u16 = 15;
+const ID: u16 = 16;
+const Q_SYMBOL: u16 = 12;
+const STR_BR_L: u16 = 8;
+const STR_BR_R: u16 = 9;
+const FUN_BR_L: u16 = 10;
+const FUN_BR_R: u16 = 11;
+const NAME: u16 = 4;
 
 #[test]
 fn test_mapping() {
