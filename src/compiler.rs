@@ -54,7 +54,7 @@ fn compile_sentence(module: &str, sentence: &Sentence) -> Vec<Command> {
     commands
 }
 
-fn compile_pattern(pattern: &[&Object]) -> PatternCompile {
+fn compile_pattern<'a>(pattern: &'a [&Object]) -> State<'a> {
     let mut state = State {
         border_l: 1,
         border_r: 2,
@@ -97,10 +97,7 @@ fn compile_pattern(pattern: &[&Object]) -> PatternCompile {
         }
     }
 
-    PatternCompile {
-        commands: state.commands,
-        projected_vars: state.projected_vars,
-    }
+    state
 }
 
 fn match_move_borders(state: &mut State, index: usize) {
@@ -628,11 +625,6 @@ struct State<'a> {
     holes: Vec<Hole<'a>>,
     transition_depth_stack: Vec<usize>,
     commands: Vec<Command>,
-}
-
-struct PatternCompile {
-    commands: Vec<Command>,
-    projected_vars: HashMap<String, usize>,
 }
 
 struct Decomposition {
