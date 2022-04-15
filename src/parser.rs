@@ -1,5 +1,5 @@
-use crate::data::RefalObject::*;
-use crate::data::{Error, Function, RefalModule, RefalObject, Result, Sentence};
+use crate::data::Object::*;
+use crate::data::{Error, Function, Object, RefalModule, Result, Sentence};
 use tree_sitter::{Node, TreeCursor};
 
 pub fn parse_input(text: &str) -> Result<RefalModule> {
@@ -47,7 +47,7 @@ fn translate_sentence<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &s
     Sentence { pattern, rewrite }
 }
 
-fn translate_object(node: tree_sitter::Node, text: &str) -> RefalObject {
+fn translate_object(node: tree_sitter::Node, text: &str) -> Object {
     match node.kind_id() {
         E_VAR => EVar(get_string(&node, text)),
         S_VAR => SVar(get_string(&node, text)),

@@ -39,8 +39,8 @@ fn flatten(mut sentence_commands: Vec<Vec<Command>>) -> Vec<Command> {
 
 fn compile_sentence(module: &str, sentence: &Sentence) -> Vec<Command> {
     let mut commands = Vec::<Command>::new();
-    let pattern: Vec<&RefalObject> = sentence.pattern.iter().collect();
-    let expression: Vec<&RefalObject> = sentence.rewrite.iter().collect();
+    let pattern: Vec<&Object> = sentence.pattern.iter().collect();
+    let expression: Vec<&Object> = sentence.rewrite.iter().collect();
     let mut result = compile_pattern(&pattern);
     commands.append(&mut result.commands);
     commands.append(&mut compile_rewrite(
@@ -51,7 +51,7 @@ fn compile_sentence(module: &str, sentence: &Sentence) -> Vec<Command> {
     commands
 }
 
-fn compile_pattern(pattern: &[&RefalObject]) -> PatternCompile {
+fn compile_pattern(pattern: &[&Object]) -> PatternCompile {
     let mut state = State {
         border_l: 1,
         border_r: 2,
@@ -130,7 +130,7 @@ fn match_e_var(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) if hole.objects.len() == 1 => {
             let first_in_hole = hole.objects[0];
-            if let RefalObject::EVar(v) = first_in_hole {
+            if let Object::EVar(v) = first_in_hole {
                 if !state.projected_vars.contains_key(v) {
                     state.commands.push(Command::MatchEVar);
                     state
@@ -154,7 +154,7 @@ fn match_str_bracket_l(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let first_in_hole = hole.objects[0];
-            if let RefalObject::StrBracketL = first_in_hole {
+            if let Object::StrBracketL = first_in_hole {
                 state.commands.push(Command::MatchStrBracketL);
                 let mut l_br_amount: usize = 1;
                 let mut right_br_index: usize = 0;
@@ -162,13 +162,13 @@ fn match_str_bracket_l(state: &mut State, index: usize) -> bool {
                 for (i, obj) in hole.objects.iter().enumerate() {
                     if i == 0 {
                         continue;
-                    } else if let RefalObject::StrBracketR = obj {
+                    } else if let Object::StrBracketR = obj {
                         l_br_amount -= 1;
                         if l_br_amount == 0 {
                             right_br_index = i;
                             break;
                         }
-                    } else if let RefalObject::StrBracketL = obj {
+                    } else if let Object::StrBracketL = obj {
                         l_br_amount += 1;
                     }
                 }
@@ -201,7 +201,7 @@ fn match_s_l(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let first_in_hole = hole.objects[0];
-            if let RefalObject::Symbol(s) = first_in_hole {
+            if let Object::Symbol(s) = first_in_hole {
                 state.commands.push(Command::MatchSymbolL(s.clone()));
                 state.border_l = state.next_element;
                 state.border_r = hole.border_r;
@@ -213,7 +213,7 @@ fn match_s_l(state: &mut State, index: usize) -> bool {
                 };
                 state.next_element += 1;
                 true
-            } else if let RefalObject::SVar(v) = first_in_hole {
+            } else if let Object::SVar(v) = first_in_hole {
                 match state.projected_vars.get(v) {
                     None => {
                         state.commands.push(Command::MatchSVarL);
@@ -243,7 +243,7 @@ fn match_e_l(state: &mut State, index: usize) -> bool {
     match state.holes.get(index) {
         Some(hole) => {
             let first_in_hole = hole.objects[0];
-            let this_match = if let RefalObject::TVar(v) = first_in_hole {
+            let this_match = if let Object::TVar(v) = first_in_hole {
                 match state.projected_vars.get(v) {
                     None => {
                         state.commands.push(Command::MatchTVarL);
@@ -254,7 +254,7 @@ fn match_e_l(state: &mut State, index: usize) -> bool {
                     Some(i) => state.commands.push(Command::MatchEVarLProj(*i)),
                 };
                 true
-            } else if let RefalObject::EVar(v) = first_in_hole {
+            } else if let Object::EVar(v) = first_in_hole {
                 match state.projected_vars.get(v) {
                     Some(i) => {
                         state.commands.push(Command::MatchEVarLProj(*i));
@@ -287,20 +287,20 @@ fn match_str_bracket_r(state: &mut State, index: usize) -> bool {
         Some(hole) => {
             let last_obj_index = hole.objects.len() - 1;
             let last = hole.objects[last_obj_index];
-            if let RefalObject::StrBracketR = last {
+            if let Object::StrBracketR = last {
                 state.commands.push(Command::MatchStrBracketR);
                 let mut l_br_index: usize = 0;
                 let mut r_br_amount: usize = 1;
                 for (i, obj) in hole.objects.iter().enumerate().rev() {
                     if i == last_obj_index {
                         continue;
-                    } else if let RefalObject::StrBracketL = obj {
+                    } else if let Object::StrBracketL = obj {
                         r_br_amount -= 1;
                         if r_br_amount == 0 {
                             l_br_index = i;
                             break;
                         }
-                    } else if let RefalObject::StrBracketR = obj {
+                    } else if let Object::StrBracketR = obj {
                         r_br_amount += 1;
                     }
                 }
@@ -334,10 +334,10 @@ fn match_s_r(state: &mut State, index: usize) -> bool {
         Some(hole) => {
             let last_obj_index = hole.objects.len() - 1;
             let last = hole.objects[last_obj_index];
-            let found = if let RefalObject::Symbol(s) = last {
+            let found = if let Object::Symbol(s) = last {
                 state.commands.push(Command::MatchSymbolR(s.clone()));
                 true
-            } else if let RefalObject::SVar(v) = last {
+            } else if let Object::SVar(v) = last {
                 match state.projected_vars.get(v) {
                     None => {
                         state.commands.push(Command::MatchSVarR);
@@ -371,7 +371,7 @@ fn match_e_r(state: &mut State, index: usize) -> bool {
         Some(hole) => {
             let last_obj_index = hole.objects.len() - 1;
             let last = hole.objects[last_obj_index];
-            let this_match = if let RefalObject::TVar(v) = last {
+            let this_match = if let Object::TVar(v) = last {
                 match state.projected_vars.get(v) {
                     None => {
                         state.commands.push(Command::MatchTVarR);
@@ -384,7 +384,7 @@ fn match_e_r(state: &mut State, index: usize) -> bool {
                     }
                 };
                 true
-            } else if let RefalObject::EVar(v) = last {
+            } else if let Object::EVar(v) = last {
                 match state.projected_vars.get(v) {
                     Some(i) => {
                         state.commands.push(Command::MatchEVarRProj(*i));
@@ -446,7 +446,7 @@ fn handle_holes(state: &mut State) {
         }
     }
     if let Some(hole) = state.holes.first() {
-        if let Some(RefalObject::EVar(v)) = hole.objects.first() {
+        if let Some(Object::EVar(v)) = hole.objects.first() {
             if state.border_l != hole.border_l {
                 state
                     .commands
@@ -487,7 +487,7 @@ fn constrain_lengthen(state: &mut State) {
 
 fn compile_rewrite(
     module: &str,
-    expression: &[&RefalObject],
+    expression: &[&Object],
     projected_vars: &HashMap<String, usize>,
 ) -> Vec<Command> {
     let mut vars: HashSet<_> = projected_vars.keys().collect();
@@ -495,26 +495,26 @@ fn compile_rewrite(
     let mut prev_fun_br = false;
     for obj in expression {
         match obj {
-            RefalObject::Symbol(image) if prev_fun_br => {
+            Object::Symbol(image) if prev_fun_br => {
                 commands.push(Command::InsertSymbol(qualify(module, image)))
             }
-            RefalObject::Symbol(image) => commands.push(Command::InsertSymbol(image.clone())),
-            RefalObject::StrBracketL => commands.push(Command::InsertStrBracketL),
-            RefalObject::StrBracketR => commands.push(Command::InsertStrBracketR),
-            RefalObject::FunBracketL => commands.push(Command::InsertFunBracketL),
-            RefalObject::FunBracketR => commands.push(Command::InsertFunBracketR),
-            RefalObject::SVar(v) if vars.remove(v) => {
+            Object::Symbol(image) => commands.push(Command::InsertSymbol(image.clone())),
+            Object::StrBracketL => commands.push(Command::InsertStrBracketL),
+            Object::StrBracketR => commands.push(Command::InsertStrBracketR),
+            Object::FunBracketL => commands.push(Command::InsertFunBracketL),
+            Object::FunBracketR => commands.push(Command::InsertFunBracketR),
+            Object::SVar(v) if vars.remove(v) => {
                 commands.push(Command::TransplantObject(projected_vars[v]))
             }
-            RefalObject::SVar(v) => commands.push(Command::CopySymbol(projected_vars[v])),
-            RefalObject::EVar(v) | RefalObject::TVar(v) if vars.remove(v) => {
+            Object::SVar(v) => commands.push(Command::CopySymbol(projected_vars[v])),
+            Object::EVar(v) | Object::TVar(v) if vars.remove(v) => {
                 commands.push(Command::TransplantExpr(projected_vars[v]))
             }
-            RefalObject::EVar(v) | RefalObject::TVar(v) => {
+            Object::EVar(v) | Object::TVar(v) => {
                 commands.push(Command::CopyExpr(projected_vars[v]))
             }
         }
-        prev_fun_br = **obj == RefalObject::FunBracketL;
+        prev_fun_br = **obj == Object::FunBracketL;
     }
     commands.push(Command::RewriteFinalize);
     commands.push(Command::MatchStart);
@@ -590,23 +590,23 @@ fn decompose_holes(holes: &[Hole], projected_vars: &HashSet<String>) -> Decompos
     }
 }
 
-fn non_trivial_hole(objects: &[&RefalObject], projected_vars: &HashMap<String, usize>) -> bool {
+fn non_trivial_hole(objects: &[&Object], projected_vars: &HashMap<String, usize>) -> bool {
     (objects.len() > 1)
         && (match objects.first() {
-            Some(RefalObject::EVar(v)) => !projected_vars.contains_key(v),
+            Some(Object::EVar(v)) => !projected_vars.contains_key(v),
             _ => false,
         })
         && (match objects.last() {
-            Some(RefalObject::EVar(v)) => !projected_vars.contains_key(v),
+            Some(Object::EVar(v)) => !projected_vars.contains_key(v),
             _ => false,
         })
 }
 
-fn vars(objects: &[&RefalObject]) -> HashSet<String> {
+fn vars(objects: &[&Object]) -> HashSet<String> {
     let mut result = HashSet::<String>::new();
     for object in objects {
         match object {
-            RefalObject::EVar(s) | RefalObject::SVar(s) | RefalObject::TVar(s) => {
+            Object::EVar(s) | Object::SVar(s) | Object::TVar(s) => {
                 result.insert(s.clone());
             }
             _ => continue,
@@ -640,7 +640,7 @@ struct Decomposition {
 struct Hole<'a> {
     border_l: usize,
     border_r: usize,
-    objects: Vec<&'a RefalObject>,
+    objects: Vec<&'a Object>,
 }
 
 #[cfg(test)]

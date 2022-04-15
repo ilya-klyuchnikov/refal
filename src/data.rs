@@ -9,7 +9,7 @@ pub enum Error {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum RefalObject {
+pub enum Object {
     Symbol(String),
     StrBracketL,
     StrBracketR,
@@ -22,8 +22,8 @@ pub enum RefalObject {
 
 #[derive(Debug, PartialEq)]
 pub struct Sentence {
-    pub pattern: Vec<RefalObject>,
-    pub rewrite: Vec<RefalObject>,
+    pub pattern: Vec<Object>,
+    pub rewrite: Vec<Object>,
 }
 
 #[derive(Debug, PartialEq)]
