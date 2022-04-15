@@ -93,6 +93,8 @@ const STR_BR_R: u16 = 9;
 const FUN_BR_L: u16 = 10;
 const FUN_BR_R: u16 = 11;
 const NAME: u16 = 4;
+const CONDITIONS: u16 = 1;
+const TEST: u16 = 8;
 
 #[test]
 fn test_mapping() {
@@ -113,4 +115,7 @@ fn test_mapping() {
     assert_eq!(PATTERN, language.field_id_for_name("pattern").unwrap());
     assert_eq!(REWRITE, language.field_id_for_name("rewrite").unwrap());
     assert_eq!(NAME, language.field_id_for_name("name").unwrap());
+
+    assert_eq!(CONDITIONS, language.field_id_for_name("conditions").unwrap());
+    assert_eq!(TEST, language.field_id_for_name("test").unwrap());
 }
