@@ -70,7 +70,5 @@ pub enum Command {
     InsertSymbol(String),
     CopySymbol(usize),
     CopyExpr(usize),
-    TransplantObject(usize),
-    TransplantExpr(usize),
     RewriteFinalize,
 }

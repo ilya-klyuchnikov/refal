@@ -493,7 +493,6 @@ fn compile_rewrite(
     expression: &[&Object],
     projected_vars: &HashMap<String, usize>,
 ) -> Vec<Command> {
-    let mut vars: HashSet<_> = projected_vars.keys().collect();
     let mut commands = vec![Command::RewriteStart];
     let mut prev_fun_br = false;
     for obj in expression {
@@ -506,13 +505,7 @@ fn compile_rewrite(
             Object::StrBracketR => commands.push(Command::InsertStrBracketR),
             Object::FunBracketL => commands.push(Command::InsertFunBracketL),
             Object::FunBracketR => commands.push(Command::InsertFunBracketR),
-            Object::SVar(v) if vars.remove(v) => {
-                commands.push(Command::TransplantObject(projected_vars[v]))
-            }
             Object::SVar(v) => commands.push(Command::CopySymbol(projected_vars[v])),
-            Object::EVar(v) | Object::TVar(v) if vars.remove(v) => {
-                commands.push(Command::TransplantExpr(projected_vars[v]))
-            }
             Object::EVar(v) | Object::TVar(v) => {
                 commands.push(Command::CopyExpr(projected_vars[v]))
             }

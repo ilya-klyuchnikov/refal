@@ -331,7 +331,6 @@ impl VM<'_> {
         let mut local_dots: Vec<Rc<Node>> = vec![];
         let mut l_brackets: Vec<Rc<Node>> = vec![];
         let mut l_fun_brackets: Vec<Rc<Node>> = vec![];
-        let mut transplants: Vec<(Rc<Node>, Rc<Node>, Rc<Node>)> = vec![];
         loop {
             let cmd = &self.commands[self.command_index];
             self.command_index += 1;
@@ -378,20 +377,6 @@ impl VM<'_> {
                     link_nodes(&border, &next);
                     local_dots.push(border.clone());
                 }
-                Command::TransplantObject(n) => {
-                    transplants.push((
-                        border.clone(),
-                        self.projections[*n].clone(),
-                        self.projections[*n].clone(),
-                    ));
-                }
-                Command::TransplantExpr(n) => {
-                    let start = self.projections[*n - 1].clone();
-                    let end = self.projections[*n].clone();
-                    if !ptr::eq(end.next().as_ref(), start.as_ref()) {
-                        transplants.push((border.clone(), start, end));
-                    }
-                }
                 Command::CopySymbol(n) => {
                     let node = &self.projections[*n];
                     let s = node.object.symbol().unwrap().to_string();
@@ -433,25 +418,14 @@ impl VM<'_> {
                 }
                 Command::RewriteFinalize => {
                     let node = &self.projections[2];
-                    let garbage = if !ptr::eq(border.as_ref(), node.as_ref()) {
+                    if !ptr::eq(border.as_ref(), node.as_ref()) {
                         let next = &node.next();
                         let first_to_delete = border.next();
                         let last_to_delete = next.prev();
                         link_nodes(&border, next);
                         unlink_next(&last_to_delete);
                         unlink_prev(&first_to_delete);
-                        Some(first_to_delete)
-                    } else {
-                        None
-                    };
-                    while let Some(transplant) = transplants.pop() {
-                        let (border, start, end) = transplant;
-                        link_nodes(&start.prev(), &end.next());
-                        link_nodes(&end, &border.next());
-                        link_nodes(&border, &start);
-                    }
-                    if let Some(start) = garbage {
-                        free(start);
+                        free(first_to_delete);
                     }
                     while let Some(dot) = local_dots.pop() {
                         self.dots.push(dot)

@@ -97,7 +97,7 @@ fn test_palindrome() {
             Command::RewriteStart,
             Command::InsertFunBracketL,
             Command::InsertSymbol(String::from("T.P")),
-            Command::TransplantExpr(6),
+            Command::CopyExpr(6),
             Command::InsertFunBracketR,
             Command::RewriteFinalize,
             Command::MatchStart,
