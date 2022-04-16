@@ -23,7 +23,7 @@ struct VM<'a> {
     border_l: Rc<Node>,
     border_r: Rc<Node>,
     dots: Vec<Rc<Node>>,
-    end: bool,
+    done: bool,
 }
 
 pub fn eval_main(defs: &HashMap<String, Vec<Command>>, main: &str) -> Vec<Object> {
@@ -34,7 +34,7 @@ pub fn eval_main(defs: &HashMap<String, Vec<Command>>, main: &str) -> Vec<Object
 
 fn eval(defs: &HashMap<String, Vec<Command>>, dots: Vec<Rc<Node>>) {
     let mut vm = init_vm(defs, dots);
-    while !vm.end {
+    while !vm.done {
         let cmd = &vm.commands[vm.command_index];
         vm.command_index += 1;
         execute_cmd(&mut vm, cmd);
@@ -58,7 +58,7 @@ fn init_vm(defs: &HashMap<String, Vec<Command>>, mut dots: Vec<Rc<Node>>) -> VM 
         border_r: fun_br_r,
         dots,
         commands,
-        end: false,
+        done: false,
         defs,
     }
 }
@@ -94,7 +94,7 @@ fn execute_cmd(vm: &mut VM, cmd: &Command) {
 impl VM<'_> {
     fn match_start(&mut self) {
         if self.dots.is_empty() {
-            self.end = true;
+            self.done = true;
             return;
         }
 
