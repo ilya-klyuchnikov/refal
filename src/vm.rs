@@ -121,7 +121,7 @@ impl VM<'_> {
     }
 
     fn match_symbol_l(&mut self, symbol: &str) {
-        if self.shift_border1() {
+        if self.shift_border_l() {
             match &self.border_l.object {
                 Object::Symbol(s) if s == symbol => self.projections.push(self.border_l.clone()),
                 _ => self.fail(),
@@ -130,7 +130,7 @@ impl VM<'_> {
     }
 
     fn match_symbol_r(&mut self, symbol: &str) {
-        if self.shift_border2() {
+        if self.shift_border_r() {
             match &self.border_r.object {
                 Object::Symbol(s) if s == symbol => self.projections.push(self.border_r.clone()),
                 _ => self.fail(),
@@ -139,7 +139,7 @@ impl VM<'_> {
     }
 
     fn match_str_bracket_l(&mut self) {
-        if self.shift_border1() {
+        if self.shift_border_l() {
             match self.border_l.object {
                 Object::StrBracketL => {
                     self.border_r = self.border_l.twin();
@@ -152,7 +152,7 @@ impl VM<'_> {
     }
 
     fn match_str_bracket_r(&mut self) {
-        if self.shift_border2() {
+        if self.shift_border_r() {
             match self.border_r.object {
                 Object::StrBracketR => {
                     self.projections.push(self.border_r.twin());
@@ -165,7 +165,7 @@ impl VM<'_> {
     }
 
     fn match_s_var_l(&mut self) {
-        if self.shift_border1() {
+        if self.shift_border_l() {
             if self.border_l.object.symbol().is_none() {
                 self.fail()
             } else {
@@ -175,7 +175,7 @@ impl VM<'_> {
     }
 
     fn match_s_var_r(&mut self) {
-        if self.shift_border2() {
+        if self.shift_border_r() {
             if self.border_r.object.symbol().is_none() {
                 self.fail()
             } else {
@@ -185,7 +185,7 @@ impl VM<'_> {
     }
 
     fn match_s_var_l_proj(&mut self, n: usize) {
-        if self.shift_border1() {
+        if self.shift_border_l() {
             let object = &self.projections[n].object;
             if &self.border_l.object != object {
                 self.fail()
@@ -196,7 +196,7 @@ impl VM<'_> {
     }
 
     fn match_s_var_r_proj(&mut self, n: usize) {
-        if self.shift_border2() {
+        if self.shift_border_r() {
             let object = &self.projections[n].object;
             if &self.border_r.object != object {
                 self.fail()
@@ -207,7 +207,7 @@ impl VM<'_> {
     }
 
     fn match_t_var_l(&mut self) {
-        if self.shift_border1() {
+        if self.shift_border_l() {
             self.projections.push(self.border_l.clone());
             if self.border_l.object == Object::StrBracketL {
                 self.border_l = self.border_l.twin();
@@ -217,7 +217,7 @@ impl VM<'_> {
     }
 
     fn match_t_var_r(&mut self) {
-        if self.shift_border2() {
+        if self.shift_border_r() {
             let to_insert = self.border_r.clone();
             if self.border_r.object == Object::StrBracketR {
                 self.border_r = self.border_r.twin()
@@ -241,7 +241,7 @@ impl VM<'_> {
         let mut cursor = border1.prev();
         while !ptr::eq(cursor.as_ref(), border2.as_ref()) {
             cursor = cursor.next();
-            if !self.shift_border1() {
+            if !self.shift_border_l() {
                 return;
             }
             if cursor.object == self.border_l.object {
@@ -261,7 +261,7 @@ impl VM<'_> {
         let mut cursor = border2.next();
         while !ptr::eq(cursor.as_ref(), border1.as_ref()) {
             cursor = cursor.prev();
-            if !self.shift_border2() {
+            if !self.shift_border_r() {
                 return;
             }
             if cursor.object == self.border_r.object {
@@ -296,7 +296,7 @@ impl VM<'_> {
 
     fn lengthen(&mut self) {
         self.border_l = self.projections.pop().unwrap();
-        if self.shift_border1() {
+        if self.shift_border_l() {
             if self.border_l.object == Object::StrBracketL {
                 self.border_l = self.border_l.twin();
             }
@@ -476,7 +476,7 @@ impl VM<'_> {
         }
     }
 
-    fn shift_border1(&mut self) -> bool {
+    fn shift_border_l(&mut self) -> bool {
         self.border_l = self.border_l.next();
         if ptr::eq(self.border_l.as_ref(), self.border_r.as_ref()) {
             self.fail();
@@ -486,7 +486,7 @@ impl VM<'_> {
         }
     }
 
-    fn shift_border2(&mut self) -> bool {
+    fn shift_border_r(&mut self) -> bool {
         self.border_r = self.border_r.prev();
         if ptr::eq(self.border_l.as_ref(), self.border_r.as_ref()) {
             self.fail();
