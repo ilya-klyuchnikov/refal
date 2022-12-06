@@ -8,7 +8,7 @@ pub enum Error {
     IllegalState,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Object {
     Symbol(String),
     StrBracketL,
@@ -20,25 +20,25 @@ pub enum Object {
     TVar(String),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Sentence {
     pub pattern: Vec<Object>,
     pub rewrite: Vec<Object>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Function {
     pub name: String,
     pub sentences: Vec<Sentence>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct RefalModule {
     pub name: String,
     pub functions: Vec<Function>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Command {
     MatchStart,
     MatchEmpty,
