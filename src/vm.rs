@@ -15,13 +15,19 @@ struct Jump {
 }
 
 struct VM<'a> {
+    // Mapping: function names -> commands
     defs: &'a HashMap<String, Vec<Command>>,
+    // the current set of commands
     commands: &'a Vec<Command>,
     command_index: usize,
+    // ТЭ - таблица элементов
     projections: Vec<Rc<Node>>,
     jumps: Vec<Jump>,
+    // Г1 in phd
     border_l: Rc<Node>,
+    // Г2 in phd
     border_r: Rc<Node>,
+    // the stack of execution
     dots: Vec<Rc<Node>>,
     done: bool,
 }

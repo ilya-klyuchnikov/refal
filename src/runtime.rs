@@ -21,10 +21,15 @@ impl Object {
     }
 }
 
+// A node in a doubly linked list of Refal objects.
 pub struct Node {
+    // The Refal object contained in this node
     pub object: Object,
+    // Previous node reference, None if this is the first node
     prev: RefCell<Option<Rc<Node>>>,
+    // Next node reference, None if this is the last node
     next: RefCell<Option<Rc<Node>>>,
+    // Reference to matching bracket node for StrBracketL/R and FunBracketL/R
     twin: RefCell<Option<Rc<Node>>>,
 }
 
