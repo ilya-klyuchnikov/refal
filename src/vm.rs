@@ -338,9 +338,7 @@ impl VM<'_> {
     }
 
     fn constrain_lengthen(&mut self, n: usize) {
-        for _ in 0..n {
-            self.jumps.pop();
-        }
+        self.jumps.truncate(self.jumps.len() - n);
     }
 
     fn rewrite_start(&mut self) {
