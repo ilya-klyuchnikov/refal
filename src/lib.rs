@@ -1,5 +1,5 @@
 pub mod compiler;
 pub mod data;
-mod parser;
+pub mod parser;
 mod runtime;
 pub mod vm;

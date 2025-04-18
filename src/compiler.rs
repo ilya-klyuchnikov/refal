@@ -524,7 +524,7 @@ fn compile_rewrite(
     commands
 }
 
-fn qualify(module: &str, fun: &str) -> String {
+pub fn qualify(module: &str, fun: &str) -> String {
     if fun.contains('.') {
         fun.to_string()
     } else {
