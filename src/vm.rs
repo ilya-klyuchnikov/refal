@@ -83,7 +83,6 @@ fn init_vm<'a>(defs: &'a HashMap<String, Vec<Command>>, main: &str) -> VM<'a> {
 
 fn execute_cmd(vm: &mut VM, cmd: &Command) {
     match cmd {
-        Command::MatchStart => vm.match_start(),
         Command::MatchEmpty => vm.match_empty(),
         Command::MatchStrBracketL => vm.match_str_bracket_l(),
         Command::MatchStrBracketR => vm.match_str_bracket_r(),
@@ -105,12 +104,13 @@ fn execute_cmd(vm: &mut VM, cmd: &Command) {
         Command::SetupTransition(n) => vm.setup_transition(*n),
         Command::ConstrainLengthen(n) => vm.constrain_lengthen(*n),
         Command::RewriteStart => vm.rewrite_start(),
+        Command::Return => vm.handle_return(),
         _ => panic!("illegal cmd: {:?}", cmd),
     }
 }
 
 impl VM<'_> {
-    fn match_start(&mut self) {
+    fn handle_return(&mut self) {
         if self.dots.is_empty() {
             self.done = true;
             return;

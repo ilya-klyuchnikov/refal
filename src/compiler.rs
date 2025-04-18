@@ -520,7 +520,7 @@ fn compile_rewrite(
         prev_fun_br = **obj == Object::FunBracketL;
     }
     commands.push(Command::RewriteFinalize);
-    commands.push(Command::MatchStart);
+    commands.push(Command::Return);
     commands
 }
 

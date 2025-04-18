@@ -40,24 +40,81 @@ pub struct RefalModule {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
-    MatchStart,
+    // Checks that there is nothing between the border nodes.
+    // Preprint - 3.8 (NIL)
+    // PhD - 3.8 (ПРОВ)
     MatchEmpty,
+
+    // Matches a symbol on the left.
+    // PhD - 3.8 (3HAЧ,S)
+    // Preprint - 3.8 LSC(S)
     MatchSymbolL(String),
+    // Matches a symbol on the right
+    // PhD - 3.8 (ЗНАЧЯ,S)
+    // Preprint - 3.8 RSC(S)
     MatchSymbolR(String),
+
+    // Matches a bracket on the left
+    // PhD - 3.8 (СКОБ)
+    // Preprint - 3.8 LB
     MatchStrBracketL,
+    // Matches a bracket on the left
+    // PhD - 3.8 (СКОБЯ)
+    // Preprint - 3.8 RB
     MatchStrBracketR,
+
+    // Matches a symbol on the left
+    // PhD - 3.9 (СИМ)
+    // Preprint - 3.9 LS
     MatchSVarL,
+    // Matches a symbol variable on the left
+    // PhD - 3.9 (СИМЯ)
+    // Preprint - 3.9 RS
     MatchSVarR,
+
+    // Matches a bound symbol variable on the left
+    // PhD - 3.9 (СТС)
+    // Preprint - 3.9 LSD
     MatchSVarLProj(usize),
+    // Matches a bound symbol variable on the right
+    // PhD - 3.9 (СТСЯ)
+    // Preprint - 3.9 RSD
     MatchSVarRProj(usize),
+
+    // Matches a term variable on the left.
+    // Preprint - 3.9 LW
+    // PhD - 3.9 (ТЕРМ,N)
     MatchTVarL,
+    // Matches a term variable on the left.
+    // Preprint - 3.9 RW
+    // PhD - 3.9 (ТЕРМЯ,N)
     MatchTVarR,
+
+    // Matches a closed expression variable.
+    // Preprint - 3.9 CE
+    // PhD - 3.9 (ЗАКР)
     MatchEVar,
     MatchEVarPrepare,
     MatchEVarLengthen,
+
+    // Matches a bound expression variable on the left
+    // Preprint - 3.9 LED(N)
+    // PhD - 3.9 (CTB,N)
     MatchEVarLProj(usize),
+
+    // Matches a bound expression variable on the right
+    // Preprint - 3.9 RED(N)
+    // PhD - 3.9 (СТВЯ,N)
     MatchEVarRProj(usize),
+
+    // Moves the left border to a corresponding projection.
+    // Preprint - 3.8 SB(N, M)
+    // PhD - 3.8 (УГР,N,M)
     MatchMoveBorderL(usize),
+
+    // Moves the right border to a corresponding projection.
+    // Preprint - 3.8 SB(N, M)
+    // PhD - 3.8 (УГР,N,M)
     MatchMoveBorderR(usize),
     SetupTransition(usize),
     ConstrainLengthen(usize),
@@ -73,4 +130,8 @@ pub enum Command {
     TransplantObject(usize),
     TransplantExpr(usize),
     RewriteFinalize,
+
+    // Completes execution of the current sentence.
+    // PhD - 3.25. Preprint - 3.20.
+    Return,
 }
