@@ -57,6 +57,8 @@ impl Node {
 
 pub struct Chain {
     pub first: Rc<Node>,
+    // not used for now, but may be used later
+    #[allow(dead_code)]
     pub last: Rc<Node>,
 }
 
