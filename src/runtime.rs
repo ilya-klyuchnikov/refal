@@ -60,16 +60,9 @@ impl Node {
     }
 }
 
-pub struct Chain {
-    pub first: Rc<Node>,
-    // not used for now, but may be used later
-    #[allow(dead_code)]
-    pub last: Rc<Node>,
-}
-
-pub fn flatten(chain: &Chain) -> Vec<Object> {
+pub fn flatten(first: Rc<Node>) -> Vec<Object> {
     let mut objects = Vec::<Object>::new();
-    let mut cursor = chain.first.clone();
+    let mut cursor = first.clone();
     loop {
         match &cursor.object {
             Object::First | Object::Last => (),
@@ -118,20 +111,4 @@ pub fn free(start: Rc<Node>) {
             Some(n) => cursor = n,
         }
     }
-}
-
-pub fn init_view(main: &str) -> (Vec<Rc<Node>>, Chain) {
-    let first = Rc::new(Node::new(Object::First));
-    let fun_br_l = Rc::new(Node::new(Object::FunBracketL));
-    let fun = Rc::new(Node::new(Object::Symbol(String::from(main))));
-    let fun_br_r = Rc::new(Node::new(Object::FunBracketR));
-    let last = Rc::new(Node::new(Object::Last));
-
-    link_nodes(&first, &fun_br_l);
-    link_nodes(&fun_br_l, &fun);
-    link_nodes(&fun, &fun_br_r);
-    link_nodes(&fun_br_r, &last);
-    pair_nodes(&fun_br_l, &fun_br_r);
-
-    (vec![fun_br_r], Chain { first, last })
 }

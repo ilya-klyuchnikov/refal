@@ -30,42 +30,54 @@ struct VM<'a> {
     // the stack of execution
     dots: Vec<Rc<Node>>,
     done: bool,
+    // The start of the view field.
+    // It can be used for dumping the current state of execution
+    // or for getting the final result of execution.
+    first: Rc<Node>,
 }
 
 pub fn eval_main(defs: &HashMap<String, Vec<Command>>, main: &str) -> Vec<Object> {
-    let (dots, chain) = init_view(main);
-    eval(defs, dots);
-    flatten(&chain)
+    let vm = init_vm(defs, main);
+    let result = eval(vm);
+    flatten(result)
 }
 
-fn eval(defs: &HashMap<String, Vec<Command>>, dots: Vec<Rc<Node>>) {
-    let mut vm = init_vm(defs, dots);
+fn eval(mut vm: VM) -> Rc<Node> {
     while !vm.done {
         let cmd = &vm.commands[vm.command_index];
         vm.command_index += 1;
         execute_cmd(&mut vm, cmd);
     }
+    vm.first
 }
 
-fn init_vm(defs: &HashMap<String, Vec<Command>>, mut dots: Vec<Rc<Node>>) -> VM {
-    let fun_br_r = dots.pop().unwrap();
-    let fun_br_l = fun_br_r.twin();
-    let fun = fun_br_l.next();
-    let fun_br_l_prev = fun_br_l.prev();
+fn init_vm<'a>(defs: &'a HashMap<String, Vec<Command>>, main: &str) -> VM<'a> {
+    let start = Rc::new(Node::new(Object::First));
+    let fun_br_l = Rc::new(Node::new(Object::FunBracketL));
+    let fun = Rc::new(Node::new(Object::Symbol(String::from(main))));
+    let fun_br_r = Rc::new(Node::new(Object::FunBracketR));
+    let last = Rc::new(Node::new(Object::Last));
+
+    link_nodes(&start, &fun_br_l);
+    link_nodes(&fun_br_l, &fun);
+    link_nodes(&fun, &fun_br_r);
+    link_nodes(&fun_br_r, &last);
+    pair_nodes(&fun_br_l, &fun_br_r);
 
     let fun_sym = fun.object.symbol().unwrap();
     let commands = defs.get(fun_sym).expect(fun_sym);
 
     VM {
         command_index: 0,
-        projections: vec![fun_br_l_prev, fun.clone(), fun_br_r.clone()],
+        projections: vec![start.clone(), fun.clone(), fun_br_r.clone()],
         jumps: Vec::new(),
         border_l: fun,
         border_r: fun_br_r,
-        dots,
+        dots: vec![],
         commands,
         done: false,
         defs,
+        first: start,
     }
 }
 
