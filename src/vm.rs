@@ -22,6 +22,9 @@ struct VM<'a> {
     command_index: usize,
     // ТЭ - таблица элементов
     projections: Vec<Rc<Node>>,
+    // Stack of jumps
+    // Phd - 3.10 (СП)
+    // Preprint - 3.10 - JS
     jumps: Vec<Jump>,
     // Г1 in phd
     border_l: Rc<Node>,

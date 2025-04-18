@@ -94,7 +94,12 @@ pub enum Command {
     // Preprint - 3.9 CE
     // PhD - 3.9 (ЗАКР)
     MatchEVar,
+    // Prepares matching of an open expression variable.
+    // PhD - 3.10 (ПУД)
+    // Preprint - 3.10 (PLE)
     MatchEVarPrepare,
+    // Lengthens the current open expression variable (on the top of projections).
+    // Preprint - 3.10 (LE)
     MatchEVarLengthen,
 
     // Matches a bound expression variable on the left
@@ -116,19 +121,54 @@ pub enum Command {
     // Preprint - 3.8 SB(N, M)
     // PhD - 3.8 (УГР,N,M)
     MatchMoveBorderR(usize),
+
+    // Sets up the transition to the next sentence in the function.
+    // PhD - 3.11 (УПЕР)
+    // Preprint - 3.11 (SJUMP)
     SetupTransition(usize),
+    // PhD - 3.12 (КУД,N)
+    // Preprint - 3.12 - EOE
     ConstrainLengthen(usize),
 
+    // Starts rewriting.
+    // Preprint - 3.15 (EOR)
     RewriteStart,
+    // Inserts the left structural bracket
+    // PhD - 3.16 (BL)
+    // Preprint - 3.16 (BL)
     InsertStrBracketL,
+    // Inserts the right structural bracket
+    // PhD - 3.16 (BR)
+    // Preprint - 3.16 (BR)
     InsertStrBracketR,
+
+    // PhD - 3.23
     InsertFunBracketL,
+    // PhD - 3.23
     InsertFunBracketR,
+
+    // Inserts a new symbol
+    // PhD - 3.16 (NS,S)
+    // Preprint - 3.16 (NS)
     InsertSymbol(String),
+    // Copies a symbol from the table of projections
+    // PhD - 3.17 (MULS,N)
+    // Preprint - 3.18 (MULS,N)
     CopySymbol(usize),
+    // Copies an expression from the table of projections
+    // PhD - 3.17 (MULE,N)
+    // Preprint - 3.18 (MULE,N)
     CopyExpr(usize),
+    // Transplants an object from the table of projections
+    // PhD - 3.18 (TPL,N,M)
+    // Preprint - 3.19
     TransplantObject(usize),
+    // Transplants an expression from the table of projections
+    // PhD - 3.18 (TPL,N,M)
+    // Preprint - 3.19
     TransplantExpr(usize),
+    // PhD - 3.25
+    // Preprint - 3.20
     RewriteFinalize,
 
     // Completes execution of the current sentence.
