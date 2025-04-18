@@ -1,8 +1,8 @@
 [package]
 name = "refal"
-version = "0.1.0"
-edition = "2018"
+version = "0.2.0"
+edition = "2021"
 
 [dependencies]
-tree-sitter = "~0.20"
-"tree-sitter-refal" = { git = "https://github.com/ilya-klyuchnikov/tree-sitter-refal", tag = "0.0.1" }
+tree-sitter = "0.25.3"
+"tree-sitter-refal" = { git = "https://github.com/ilya-klyuchnikov/tree-sitter-refal", tag = "0.2.0" }

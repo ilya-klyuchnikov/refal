@@ -1,10 +1,11 @@
 use crate::data::Object::*;
 use crate::data::{Error, Function, Object, RefalModule, Result, Sentence};
+use std::num::NonZero;
 use tree_sitter::{Node, TreeCursor};
 
 pub fn parse_input(text: &str) -> Result<RefalModule> {
     let mut parser = tree_sitter::Parser::new();
-    parser.set_language(tree_sitter_refal::language()).unwrap();
+    parser.set_language(&tree_sitter_refal::language()).unwrap();
     let tree = parser.parse(text, None).unwrap();
     if tree.root_node().has_error() {
         Err(Error::Parsing)
@@ -17,7 +18,9 @@ fn translate_module(cursor: &mut TreeCursor, text: &str) -> RefalModule {
     let root_node = cursor.node();
     let module_node = root_node.child_by_field_id(MODULE).unwrap();
     let name = get_name(&module_node, text);
-    let function_nodes: Vec<_> = root_node.children_by_field_id(FUNCTION, cursor).collect();
+    let function_nodes: Vec<_> = root_node
+        .children_by_field_id(NonZero::new(FUNCTION).unwrap(), cursor)
+        .collect();
     let functions: Vec<_> = function_nodes
         .iter()
         .map(|n| translate_function(n, cursor, text))
@@ -27,7 +30,9 @@ fn translate_module(cursor: &mut TreeCursor, text: &str) -> RefalModule {
 
 fn translate_function<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &str) -> Function {
     let name = get_name(node, text);
-    let sentence_nodes: Vec<_> = node.children_by_field_id(SENTENCE, cursor).collect();
+    let sentence_nodes: Vec<_> = node
+        .children_by_field_id(NonZero::new(SENTENCE).unwrap(), cursor)
+        .collect();
     let sentences: Vec<_> = sentence_nodes
         .iter()
         .map(|n| translate_sentence(n, cursor, text))
@@ -37,11 +42,11 @@ fn translate_function<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &s
 
 fn translate_sentence<'a>(node: &Node<'a>, cursor: &mut TreeCursor<'a>, text: &str) -> Sentence {
     let pattern: Vec<_> = node
-        .children_by_field_id(PATTERN, cursor)
+        .children_by_field_id(NonZero::new(PATTERN).unwrap(), cursor)
         .map(|n| translate_object(n, text))
         .collect();
     let rewrite: Vec<_> = node
-        .children_by_field_id(REWRITE, cursor)
+        .children_by_field_id(NonZero::new(REWRITE).unwrap(), cursor)
         .map(|n| translate_object(n, text))
         .collect();
     Sentence { pattern, rewrite }
@@ -107,10 +112,22 @@ fn test_mapping() {
     assert_eq!(FUN_BR_L, language.id_for_node_kind("fun_br_l", true));
     assert_eq!(FUN_BR_R, language.id_for_node_kind("fun_br_r", true));
 
-    assert_eq!(MODULE, language.field_id_for_name("module").unwrap());
-    assert_eq!(FUNCTION, language.field_id_for_name("function").unwrap());
-    assert_eq!(SENTENCE, language.field_id_for_name("sentence").unwrap());
-    assert_eq!(PATTERN, language.field_id_for_name("pattern").unwrap());
-    assert_eq!(REWRITE, language.field_id_for_name("rewrite").unwrap());
-    assert_eq!(NAME, language.field_id_for_name("name").unwrap());
+    assert_eq!(MODULE, language.field_id_for_name("module").unwrap().into());
+    assert_eq!(
+        FUNCTION,
+        language.field_id_for_name("function").unwrap().into()
+    );
+    assert_eq!(
+        SENTENCE,
+        language.field_id_for_name("sentence").unwrap().into()
+    );
+    assert_eq!(
+        PATTERN,
+        language.field_id_for_name("pattern").unwrap().into()
+    );
+    assert_eq!(
+        REWRITE,
+        language.field_id_for_name("rewrite").unwrap().into()
+    );
+    assert_eq!(NAME, language.field_id_for_name("name").unwrap().into());
 }
