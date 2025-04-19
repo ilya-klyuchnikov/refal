@@ -1,6 +1,6 @@
 # Refal
 
-A minimalistic implementation of [Refal](https://en.wikipedia.org/wiki/Refal).
+A minimalistic implementation of Basic [Refal](https://en.wikipedia.org/wiki/Refal).
 
 It is based on the following (in Russian) papers by [Sergei Romanenko](https://github.com/sergei-romanenko):
 1. С.А.Романенко. Машинно-независимый компилятор с языка рекурсивных функций.
